@@ -33,16 +33,14 @@ export default function App() {
   useEffect(() => {
     const checkUserRoleAndTheme = async (currentUser: User) => {
       try {
-        // Admin check: either hardcoded super-admin or in admins collection, or leagueRole is RH
+        // Admin access is granted only to the two owners or an exact admins document.
         let adminStatus = false;
-                const userEmail = currentUser.email?.toLowerCase().trim() || '';
+        const userEmail = currentUser.email?.toLowerCase().trim() || '';
         if (userEmail === 'isadorasdml@gmail.com' || userEmail === 'isadora.mlima@ufpe.br') {
           adminStatus = true;
         } else {
-          const adminsSnap = await getDocs(query(collection(db, 'admins'), where('email', '==', userEmail)));
-          if (!adminsSnap.empty) {
-            adminStatus = true;
-          }
+          const adminDoc = await getDoc(doc(db, 'admins', userEmail));
+          adminStatus = adminDoc.exists() && adminDoc.data().email?.toLowerCase().trim() === userEmail;
         }
         setIsAdmin(adminStatus);
 
@@ -156,15 +154,15 @@ export default function App() {
         setToken(result.accessToken);
         setUser(result.user);
         setNeedsAuth(false);
-                const userEmail = result.user.email?.toLowerCase().trim() || '';
+        const userEmail = result.user.email?.toLowerCase().trim() || '';
+        let adminStatus = false;
         if (userEmail === 'isadorasdml@gmail.com' || userEmail === 'isadora.mlima@ufpe.br') {
-          setIsAdmin(true);
+          adminStatus = true;
         } else {
-          const adminsSnap = await getDocs(query(collection(db, 'admins'), where('email', '==', userEmail)));
-          if (!adminsSnap.empty) {
-            setIsAdmin(true);
-          }
+          const adminDoc = await getDoc(doc(db, 'admins', userEmail));
+          adminStatus = adminDoc.exists() && adminDoc.data().email?.toLowerCase().trim() === userEmail;
         }
+        setIsAdmin(adminStatus);
       }
     } catch (err: any) {
       console.error('Login failed:', err);
