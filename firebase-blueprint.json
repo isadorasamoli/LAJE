@@ -1,0 +1,85 @@
+{
+  "entities": {
+    "Response": {
+      "title": "RH Response",
+      "description": "A response submitted by a LAJE member to the HR form.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "email": { "type": "string", "maxLength": 255 },
+        "name": { "type": "string", "maxLength": 255 },
+        "course": { "type": "string", "maxLength": 255 },
+        "period": { "type": "string", "maxLength": 50 },
+        "collegeFocus": { "type": "number" },
+        "leagueRole": { "type": "string", "maxLength": 100 },
+        "leagueFocus": { "type": "number" },
+        "weeklyHours": { "type": "string", "maxLength": 200 },
+        "roleFocus": { "type": "string", "maxLength": 2000 },
+        "learningFocus": { "type": "string", "maxLength": 2000 },
+        "currentProjects": { "type": "string", "maxLength": 1000 },
+        "interestedProjects": { "type": "string", "maxLength": 1000 },
+        "priority": { "type": "string", "maxLength": 50 },
+        "progress": { "type": "number" },
+        "deadline": { "type": "string", "maxLength": 50 },
+        "notifications": { "type": "boolean" },
+        "createdAt": { "type": "number" },
+        "status": { "type": "string", "enum": ["Ativo", "Ex-membro"] },
+        "deletionReason": { "type": "string", "maxLength": 2000 }
+      },
+      "required": ["userId", "email", "name", "course", "leagueRole", "priority", "createdAt", "status"]
+    },
+    "Event": {
+      "title": "Calendar Event",
+      "description": "An event created in the LAJE calendar.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 255 },
+        "description": { "type": "string", "maxLength": 2000 },
+        "duration": { "type": "string", "maxLength": 100 },
+        "date": { "type": "string", "maxLength": 50 },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["userId", "title", "description", "duration", "date", "createdAt"]
+    },
+    "User": {
+      "title": "User Meta",
+      "description": "Metadata for a user, like email notifications and theme.",
+      "type": "object",
+      "properties": {
+        "hasReceivedWelcomeEmail": { "type": "boolean" },
+        "lastEmailSentAt": { "type": "number" },
+        "lastEventEndDate": { "type": "number" },
+        "theme": { "type": "string", "enum": ["light", "dark"] }
+      },
+      "required": ["hasReceivedWelcomeEmail", "lastEmailSentAt", "lastEventEndDate"]
+    },
+    "Admin": {
+      "title": "Admin",
+      "description": "Admin users allowed to edit events and manage the dashboard.",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "maxLength": 255 }
+      },
+      "required": ["email"]
+    }
+  },
+  "firestore": {
+    "/responses/{responseId}": {
+      "schema": "Response",
+      "description": "Stores HR form submissions from LAJE members."
+    },
+    "/events/{eventId}": {
+      "schema": "Event",
+      "description": "Stores calendar events."
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "Stores user metadata for email tracking and theme."
+    },
+    "/admins/{adminId}": {
+      "schema": "Admin",
+      "description": "Authorized administrators."
+    }
+  }
+}

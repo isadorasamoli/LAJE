@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Inter', sans-serif;
+  --font-syne: 'Syne', sans-serif;
+  --font-mono: 'Space Mono', monospace;
+}
+
+@layer base {
+  :root {
+    --color-bg-dark: #0c0c0e;
+    --color-ink: #f2f2f2;
+    --color-accent: #10b981;
+    --color-ink-faint: rgba(242, 242, 242, 0.1);
+    --color-ink-muted: rgba(242, 242, 242, 0.5);
+  }
+
+  body {
+    background-color: var(--color-bg-dark);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+  }
+
+  ::selection {
+    background: var(--color-accent);
+    color: var(--color-bg-dark);
+  }
+}
+
+div#root:nth-of-type(1) > div:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) {
+  background-color: #141414;
+}
