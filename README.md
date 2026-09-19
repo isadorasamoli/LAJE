@@ -1,11 +1,15 @@
-# LAJE HR Dashboard
+# Sobre o Projeto
 
-A high-performance productivity dashboard built with React, Tailwind CSS, and Firebase.
+Este repositório contém o código-fonte do site da LAJE (Liga Acadêmica de Jogos Eletrônicos). O objetivo principal deste projeto web é auxiliar a liga, servindo como uma plataforma centralizada para divulgação de informações, organização de eventos, campeonatos e integração dos membros interessados em e-sports no ambiente acadêmico.
 
-## Stack
-- React
-- Firebase (Auth & Firestore)
-- Tailwind CSS
+# Funcionalidades
+Apresentação da Liga (Quem somos, missão e visão).
+Mural de notícias e comunicados importantes.
+Calendário de campeonatos e eventos acadêmicos.
+Área de cadastro para novos membros ou times.
+Tabela de classificação/resultados dos torneios ativos.
 
-## Design
-The application features a minimalist, brutalist aesthetic utilizing high-contrast typography and subtle glassmorphism effects for a focused, professional workspace environment.
+# Autora
+
+Isadora Lima - GitHub
+
