@@ -11,6 +11,7 @@ import {
 } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { toast } from 'react-hot-toast';
+import { sendEventNotification } from '../lib/workspace';
 
 interface CalendarProps {
   isAdmin: boolean;
@@ -93,76 +94,13 @@ export default function CalendarTab({ isAdmin, token }: CalendarProps) {
     setDeleteConfirmOpen(true);
   };
 
-  // Send update email to all registered members (including Ex-Membro)
   const sendEventEmail = async (eventData: any, type: 'create' | 'update' | 'delete') => {
     if (!token) return;
-    try {
-      // Get all active and ex-members
-      const responseSnap = await getDocs(collection(db, 'responses'));
-      const emails = responseSnap.docs
-        .map(d => d.data())
-        .filter(data => data.email)
-        .map(data => data.email);
-
-      if (emails.length === 0) return;
-
-      const startDate = new Date(eventData.date);
-      const endDate = new Date(eventData.date);
-      const durationMatch = eventData.duration.match(/(\d+)/);
-      const durationHours = durationMatch ? parseInt(durationMatch[1], 10) : 1;
-      endDate.setHours(endDate.getHours() + durationHours);
-
-      const formatForGcal = (d: Date) => d.toISOString().replace(/-|:|\.\d\d\d/g, '');
-      const gcalLink = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(eventData.title)}&details=${encodeURIComponent(eventData.description)}&dates=${formatForGcal(startDate)}/${formatForGcal(endDate)}`;
-      
-      let subject = 'Novo Evento: ';
-      let headerText = 'Novo Evento Adicionado';
-      let bodyText = 'O seguinte evento foi adicionado no calendário da LAJE:';
-      
-      if (type === 'update') {
-        subject = 'Atualização de Evento: ';
-        headerText = 'Evento Atualizado';
-        bodyText = 'O seguinte evento foi atualizado no calendário da LAJE:';
-      } else if (type === 'delete') {
-        subject = 'Evento Cancelado: ';
-        headerText = 'Evento Cancelado';
-        bodyText = 'O seguinte evento foi cancelado no calendário da LAJE e não ocorrerá mais:';
-      }
-
-      const emailContent = [
-        'Content-Type: text/html; charset="UTF-8"\n',
-        'MIME-Version: 1.0\n',
-        `Bcc: ${emails.join(',')}\n`,
-        `Subject: ${subject}${eventData.title}\n\n`,
-        `<div style="font-family: sans-serif; color: #e5e7eb; background-color: #030712; padding: 24px; border: 1px solid #1f2937; border-radius: 8px;">
-          <h1 style="color: ${type === 'delete' ? '#ef4444' : '#10b981'};">${headerText}</h1>
-          <p>${bodyText}</p>
-          <ul style="list-style: none; padding: 0;">
-            <li style="margin-bottom: 10px; border-left: 4px solid ${type === 'delete' ? '#ef4444' : '#10b981'}; padding-left: 10px;">
-              <strong style="${type === 'delete' ? 'text-decoration: line-through;' : ''}">${eventData.title}</strong>: ${new Date(eventData.date).toLocaleString()} (${eventData.duration})<br/>
-              <span style="color: #aaa; font-size: 14px;">${eventData.description}</span><br/>
-              ${type !== 'delete' ? `<a href="${gcalLink}" target="_blank" style="display: inline-block; margin-top: 10px; padding: 6px 12px; background-color: #10b981; color: #fff; text-decoration: none; border-radius: 4px; font-size: 14px;">Adicionar ao Google Agenda</a>` : ''}
-            </li>
-          </ul>
-        </div>`
-      ].join('');
-
-      const base64EncodedEmail = btoa(unescape(encodeURIComponent(emailContent)))
-        .replace(/\+/g, '-')
-        .replace(/\//g, '_')
-        .replace(/=+$/, '');
-
-      await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages/send', {
-        method: 'POST',
-        headers: { 
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ raw: base64EncodedEmail }),
-      });
-    } catch (err) {
-      console.error("Failed to send calendar emails", err);
-    }
+    const responseSnap = await getDocs(collection(db, 'responses'));
+    const emails = responseSnap.docs
+      .map(response => response.data().email)
+      .filter((email): email is string => Boolean(email));
+    await sendEventNotification(token, emails, eventData, type);
   };
 
   const confirmDelete = async () => {

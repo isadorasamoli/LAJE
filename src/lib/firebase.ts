@@ -8,5 +8,4 @@ export const db = getFirestore(app, (firebaseConfig as any).firestoreDatabaseId)
 export const auth = getAuth(app);
 
 export const provider = new GoogleAuthProvider();
-// Removed scope
-// Removed scope
+provider.addScope('https://www.googleapis.com/auth/gmail.send');

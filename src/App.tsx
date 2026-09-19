@@ -64,52 +64,15 @@ export default function App() {
         const querySnapshot = await getDocs(q);
         const futureEvents = querySnapshot.docs.map(d => ({ id: d.id, ...d.data() } as any));
 
-        if (!userSnap.exists()) {
-          // First login ever
-          if (futureEvents.length > 0) {
-            await sendWelcomeEmail(currentToken, currentUser.email || '', currentUser.displayName || 'Membro', futureEvents);
-            
-            const lastEvent = futureEvents[futureEvents.length - 1];
-            const lastEventDate = new Date(lastEvent.date);
-            const durationMatch = lastEvent.duration.match(/(\d+)/);
-            const durationHours = durationMatch ? parseInt(durationMatch[1], 10) : 1;
-            lastEventDate.setHours(lastEventDate.getHours() + durationHours);
-
-            await setDoc(userRef, {
-              hasReceivedWelcomeEmail: true,
-              lastEmailSentAt: Date.now(),
-              lastEventEndDate: lastEventDate.getTime(),
-              theme: 'dark'
-            });
-          } else {
-            await setDoc(userRef, {
-              hasReceivedWelcomeEmail: true,
-              lastEmailSentAt: Date.now(),
-              lastEventEndDate: Date.now(),
-              theme: 'dark'
-            });
-          }
-        } else {
-          const userData = userSnap.data();
-          if (userData.lastEventEndDate && Date.now() > userData.lastEventEndDate && futureEvents.length > 0) {
-            const newEvents = futureEvents.filter(e => new Date(e.date).getTime() > userData.lastEventEndDate);
-            
-            if (newEvents.length > 0) {
-              await sendWelcomeEmail(currentToken, currentUser.email || '', currentUser.displayName || 'Membro', newEvents);
-              
-              const lastEvent = newEvents[newEvents.length - 1];
-              const lastEventDate = new Date(lastEvent.date);
-              const durationMatch = lastEvent.duration.match(/(\d+)/);
-              const durationHours = durationMatch ? parseInt(durationMatch[1], 10) : 1;
-              lastEventDate.setHours(lastEventDate.getHours() + durationHours);
-
-              await setDoc(userRef, {
-                ...userData,
-                lastEmailSentAt: Date.now(),
-                lastEventEndDate: lastEventDate.getTime()
-              });
-            }
-          }
+        const userData = userSnap.exists() ? userSnap.data() : {};
+        if (userData.hasReceivedWelcomeEmail !== true) {
+          await sendWelcomeEmail(currentToken, currentUser.email || '', currentUser.displayName || 'Membro', futureEvents);
+          await setDoc(userRef, {
+            ...userData,
+            hasReceivedWelcomeEmail: true,
+            lastEmailSentAt: Date.now(),
+            theme: userData.theme || 'dark'
+          }, { merge: true });
         }
       } catch (error) {
         console.error("Error processing emails:", error);
