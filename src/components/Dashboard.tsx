@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { handleFirestoreError, OperationType } from '../lib/utils';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
@@ -18,6 +18,9 @@ export default function Dashboard() {
   const [isEditStatusOpen, setIsEditStatusOpen] = useState(false);
   const [deletionReason, setDeletionReason] = useState('');
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const fetchData = async () => {
     try {
@@ -205,6 +208,25 @@ export default function Dashboard() {
       toast.error('Erro ao atualizar status');
     } finally {
       setIsUpdatingStatus(false);
+    }
+  };
+
+  const handleDeleteMember = async () => {
+    if (!selectedMember || deleteConfirmation.trim().toUpperCase() !== 'EXCLUIR') return;
+
+    setIsDeleting(true);
+    try {
+      await deleteDoc(doc(db, 'responses', selectedMember.id));
+      setData(data.filter(member => member.id !== selectedMember.id));
+      setSelectedMember(null);
+      setIsDeleteConfirmOpen(false);
+      setDeleteConfirmation('');
+      toast.success('Registro excluído permanentemente');
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, 'responses');
+      toast.error('Erro ao excluir o registro');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -445,6 +467,13 @@ export default function Dashboard() {
                   <Edit2 size={14} />
                   Alterar Status
                 </button>
+                <button
+                  onClick={() => setIsDeleteConfirmOpen(true)}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 text-sm font-medium transition-colors"
+                >
+                  <Trash2 size={14} />
+                  Excluir Registro
+                </button>
                 <button onClick={() => setSelectedMember(null)} className="p-2 text-gray-400 hover:text-gray-200 hover:bg-gray-800 rounded-full transition-all">
                   <X size={24} />
                 </button>
@@ -655,6 +684,48 @@ export default function Dashboard() {
                   {isUpdatingStatus ? <Loader2 className="animate-spin" size={18} /> : 'Confirmar Alteração'}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isDeleteConfirmOpen && selectedMember && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={() => setIsDeleteConfirmOpen(false)}>
+          <div className="bg-gray-950 border border-red-500/40 w-full max-w-md shadow-2xl p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-4 text-red-400">
+              <Trash2 size={22} />
+              <h3 className="text-lg font-bold">Excluir registro permanentemente?</h3>
+            </div>
+            <p className="text-sm text-gray-300 mb-5">
+              O registro de <strong className="text-white">{selectedMember.name}</strong> será removido do Registro de Atualizações (RH) e não poderá ser recuperado.
+            </p>
+            <label className="text-xs font-semibold uppercase text-gray-500 mb-1 block">
+              Digite EXCLUIR para confirmar
+            </label>
+            <input
+              value={deleteConfirmation}
+              onChange={e => setDeleteConfirmation(e.target.value)}
+              autoFocus
+              className="w-full bg-gray-900 border border-gray-700 focus:border-red-500 text-white p-3 outline-none transition-colors"
+            />
+            <div className="flex gap-3 mt-5">
+              <button
+                onClick={() => {
+                  setIsDeleteConfirmOpen(false);
+                  setDeleteConfirmation('');
+                }}
+                className="flex-1 px-4 py-3 bg-gray-800 text-white font-bold hover:bg-gray-700 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDeleteMember}
+                disabled={isDeleting || deleteConfirmation.trim().toUpperCase() !== 'EXCLUIR'}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-bold disabled:opacity-50 transition-colors"
+              >
+                {isDeleting ? <Loader2 className="animate-spin" size={18} /> : <Trash2 size={18} />}
+                Excluir definitivamente
+              </button>
             </div>
           </div>
         </div>
