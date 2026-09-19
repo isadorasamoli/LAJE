@@ -246,7 +246,7 @@ export default function Dashboard() {
 
       {/* Chart Top */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 p-6 bg-\[rgba(255,255,255,0.02)\] border border-\[var(--color-ink-faint)\]  ">
+        <div className="lg:col-span-2 p-6 bg-[rgba(255,255,255,0.02)] border border-[var(--color-ink-faint)]  ">
           <h3 className="text-white font-semibold mb-6">Membros por Categoria</h3>
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -268,15 +268,15 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="p-6 bg-\[rgba(255,255,255,0.02)\] border border-\[var(--color-ink-faint)\]   flex flex-col justify-between">
+        <div className="p-6 bg-[rgba(255,255,255,0.02)] border border-[var(--color-ink-faint)]   flex flex-col justify-between">
           <div>
             <h3 className="text-white font-semibold mb-6">Resumo Estatístico</h3>
             <div className="space-y-4">
-              <div className="flex justify-between items-center pb-4 border-b border-\[var(--color-ink-faint)\]">
+              <div className="flex justify-between items-center pb-4 border-b border-[var(--color-ink-faint)]">
                 <span className="text-gray-400 font-medium">Total de Cadastros</span>
                 <span className="text-white font-bold text-xl">{totalCount}</span>
               </div>
-              <div className="flex justify-between items-center pb-4 border-b border-\[var(--color-ink-faint)\]">
+              <div className="flex justify-between items-center pb-4 border-b border-[var(--color-ink-faint)]">
                 <span className="text-gray-400 font-medium">Projetos Ativos</span>
                 <span className="text-emerald-400 font-bold text-xl">{totalActiveProjects}</span>
               </div>
@@ -303,7 +303,7 @@ export default function Dashboard() {
 
       {/* Top Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="p-6 bg-\[rgba(255,255,255,0.02)\] border border-\[var(--color-ink-faint)\]   flex items-center justify-between">
+        <div className="p-6 bg-[rgba(255,255,255,0.02)] border border-[var(--color-ink-faint)]   flex items-center justify-between">
           <div>
             <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-1">Membros Ativos</p>
             <p className="text-3xl font-bold text-white">{activeCount}</p>
@@ -312,7 +312,7 @@ export default function Dashboard() {
             <Users size={28} />
           </div>
         </div>
-        <div className="p-6 bg-\[rgba(255,255,255,0.02)\] border border-\[var(--color-ink-faint)\]   flex items-center justify-between">
+        <div className="p-6 bg-[rgba(255,255,255,0.02)] border border-[var(--color-ink-faint)]   flex items-center justify-between">
           <div>
             <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-1">Foco Médio (Liga)</p>
             <p className="text-3xl font-bold text-white">{avgLeagueFocus} <span className="text-sm text-gray-500 font-medium">/ 5</span></p>
@@ -321,7 +321,7 @@ export default function Dashboard() {
             <Target size={28} />
           </div>
         </div>
-        <div className="p-6 bg-\[rgba(255,255,255,0.02)\] border border-\[var(--color-ink-faint)\]   flex items-center justify-between">
+        <div className="p-6 bg-[rgba(255,255,255,0.02)] border border-[var(--color-ink-faint)]   flex items-center justify-between">
           <div>
             <p className="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-1">Progresso Médio</p>
             <p className="text-3xl font-bold text-white">{avgProgress}%</p>
@@ -334,7 +334,7 @@ export default function Dashboard() {
 
       <div className="grid grid-cols-1 gap-8">
         {/* Latest Responses */}
-        <div className="p-6 bg-\[rgba(255,255,255,0.02)\] border border-\[var(--color-ink-faint)\]   flex flex-col">
+        <div className="p-6 bg-[rgba(255,255,255,0.02)] border border-[var(--color-ink-faint)]   flex flex-col">
           <h3 className="text-white font-semibold mb-6">Transmissões Recentes</h3>
           <div className="flex-1 overflow-y-auto pr-2 space-y-3 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
             {filteredData.length === 0 ? (
@@ -365,14 +365,14 @@ export default function Dashboard() {
       </div>
 
       {/* Full Data Table */}
-      <div className="p-6 bg-\[rgba(255,255,255,0.02)\] border border-\[var(--color-ink-faint)\]   overflow-hidden">
+      <div className="p-6 bg-[rgba(255,255,255,0.02)] border border-[var(--color-ink-faint)]   overflow-hidden">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-white font-semibold">Registro de Atualizações (RH)</h3>
           <p className="text-sm text-gray-400">Clique em um membro para detalhes</p>
         </div>
         <div className="w-full overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-gray-700 scrollbar-track-transparent">
           <table className="w-full text-left text-xs text-gray-300">
-            <thead className="text-xs text-gray-400 uppercase bg-gray-950 border-b border-\[var(--color-ink-faint)\]">
+            <thead className="text-xs text-gray-400 uppercase bg-gray-950 border-b border-[var(--color-ink-faint)]">
               <tr>
                 <th className="px-2 py-3 whitespace-nowrap text-[11px] font-semibold">Data</th>
                 <th className="px-2 py-3 whitespace-nowrap text-[11px] font-semibold">Membro</th>
@@ -388,7 +388,7 @@ export default function Dashboard() {
             </thead>
             <tbody>
               {filteredData.sort((a, b) => b.createdAt - a.createdAt).map(response => (
-                <tr key={response.id} onClick={() => setSelectedMember(response)} className="border-b border-\[var(--color-ink-faint)\] cursor-pointer hover:bg-gray-800/80 hover:scale-[1.01] z-0 hover:z-10 relative hover:shadow-[0_4px_20px_rgba(0,0,0,0.2)] transition-all duration-300 group">
+                <tr key={response.id} onClick={() => setSelectedMember(response)} className="border-b border-[var(--color-ink-faint)] cursor-pointer hover:bg-gray-800/80 hover:scale-[1.01] z-0 hover:z-10 relative hover:shadow-[0_4px_20px_rgba(0,0,0,0.2)] transition-all duration-300 group">
                   <td className="px-2 py-3  text-gray-400 text-xs">{new Date(response.createdAt).toLocaleDateString()}</td>
                   <td className="px-2 py-3">
                     <div className="font-semibold text-gray-200 group-hover:text-emerald-400 transition-colors">{response.name}</div>
@@ -451,8 +451,8 @@ export default function Dashboard() {
       {/* Detail Modal */}
       {selectedMember && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedMember(null)}>
-          <div className="bg-\[rgba(255,255,255,0.02)\] border border-\[var(--color-ink-faint)\] w-full max-w-3xl max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700  shadow-2xl" onClick={e => e.stopPropagation()}>
-            <div className="sticky top-0 bg-\[rgba(255,255,255,0.02)\]/90 backdrop-blur-md border-b border-\[var(--color-ink-faint)\] p-6 flex items-center justify-between z-10">
+          <div className="bg-[rgba(255,255,255,0.02)] border border-[var(--color-ink-faint)] w-full max-w-3xl max-h-[90vh] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-700  shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="sticky top-0 bg-[rgba(255,255,255,0.02)]/90 backdrop-blur-md border-b border-[var(--color-ink-faint)] p-6 flex items-center justify-between z-10">
               <div>
                 <h2 className="text-2xl font-bold text-white tracking-tight flex items-center gap-3">
                   {selectedMember.name}
@@ -501,7 +501,7 @@ export default function Dashboard() {
                 <div>
                   <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Engajamento na LAJE</h4>
                   <div className="bg-gray-800 border border-gray-700 p-4  text-sm space-y-4">
-                    <p><span className="text-gray-400 block text-xs font-semibold uppercase mb-1">Área de Atuação</span> <span className="inline-block px-2.5 py-1 bg-\[rgba(255,255,255,0.02)\] border border-gray-700  text-gray-300 text-xs font-medium">{selectedMember.leagueRole}</span></p>
+                    <p><span className="text-gray-400 block text-xs font-semibold uppercase mb-1">Área de Atuação</span> <span className="inline-block px-2.5 py-1 bg-[rgba(255,255,255,0.02)] border border-gray-700  text-gray-300 text-xs font-medium">{selectedMember.leagueRole}</span></p>
                     {selectedMember.weeklyHours && (
                       <p><span className="text-gray-400 block text-xs font-semibold uppercase mb-1">Dedicação Semanal</span> <span className="text-emerald-400 font-semibold">{selectedMember.weeklyHours}</span></p>
                     )}
@@ -577,7 +577,7 @@ export default function Dashboard() {
                   </div>
                 </div>
                 
-                <div className="pt-4 flex flex-col gap-2 border-t border-\[var(--color-ink-faint)\]">
+                <div className="pt-4 flex flex-col gap-2 border-t border-[var(--color-ink-faint)]">
                   <div className="flex justify-between items-center">
                     <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Timestamp do Registro</h4>
                     <p className="text-[10px] text-gray-500 font-medium">{new Date(selectedMember.createdAt).toLocaleString('pt-BR')}</p>
@@ -630,7 +630,7 @@ export default function Dashboard() {
       {/* Edit Status Modal */}
       {isEditStatusOpen && selectedMember && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setIsEditStatusOpen(false)}>
-          <div className="bg-\[rgba(255,255,255,0.02)\] border border-\[var(--color-ink-faint)\] w-full max-w-md  shadow-2xl p-6" onClick={e => e.stopPropagation()}>
+          <div className="bg-[rgba(255,255,255,0.02)] border border-[var(--color-ink-faint)] w-full max-w-md  shadow-2xl p-6" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-lg font-bold text-white flex items-center gap-2">
                 Alterar Status do Membro
@@ -662,7 +662,7 @@ export default function Dashboard() {
                     value={deletionReason} 
                     onChange={e => setDeletionReason(e.target.value)}
                     placeholder="Descreva o motivo (ex: desligamento, formatura, inatividade)..."
-                    className="w-full bg-gray-950 border border-\[var(--color-ink-faint)\] focus:border-red-500 focus:ring-2 focus:ring-red-500/20 text-white p-2.5  outline-none transition-all resize-none" 
+                    className="w-full bg-gray-950 border border-[var(--color-ink-faint)] focus:border-red-500 focus:ring-2 focus:ring-red-500/20 text-white p-2.5  outline-none transition-all resize-none" 
                   />
                 </div>
               )}
