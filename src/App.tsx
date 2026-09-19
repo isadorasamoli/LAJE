@@ -16,6 +16,7 @@ export default function App() {
   const [token, setToken] = useState<string | null>(null);
   const [needsAuth, setNeedsAuth] = useState(true);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'form' | 'dashboard' | 'calendar' | 'settings'>('form');
   const [isAdmin, setIsAdmin] = useState(false);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
@@ -148,6 +149,7 @@ export default function App() {
 
   const handleLogin = async () => {
     setIsLoggingIn(true);
+    setLoginError(null);
     try {
       const result = await googleSignIn();
       if (result) {
@@ -164,8 +166,15 @@ export default function App() {
           }
         }
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Login failed:', err);
+      const messages: Record<string, string> = {
+        'auth/unauthorized-domain': 'Este domínio ainda não foi autorizado no Firebase. Adicione isadorasamoli.github.io em Authentication > Settings > Authorized domains.',
+        'auth/operation-not-allowed': 'O login com Google ainda não está habilitado no Firebase.',
+        'auth/popup-blocked': 'O navegador bloqueou a janela de login. Permita pop-ups para este site e tente novamente.',
+        'auth/popup-closed-by-user': 'A janela de login foi fechada antes da conclusão.',
+      };
+      setLoginError(messages[err?.code] || 'Não foi possível entrar com o Google. Verifique o console do navegador para mais detalhes.');
     } finally {
       setIsLoggingIn(false);
     }
@@ -201,6 +210,11 @@ export default function App() {
               </div>
               {isLoggingIn ? 'Autenticando...' : 'ENTRAR COM GOOGLE'}
             </button>
+            {loginError && (
+              <p className="w-full text-left text-sm text-red-400" role="alert">
+                {loginError}
+              </p>
+            )}
           </div>
         </div>
       </div>
