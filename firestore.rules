@@ -36,10 +36,11 @@ service cloud.firestore {
         && data.userId is string
         && data.email is string && data.email.size() <= 255
         && data.name is string && data.name.size() <= 255
+        && (!data.keys().hasAny(['birthday']) || (data.birthday is string && data.birthday.size() <= 50))
         && data.course is string && data.course.size() <= 255
         && data.period is string && data.period.size() <= 50
         && (!data.keys().hasAny(['collegeFocus']) || data.collegeFocus is number)
-        && data.leagueRole is string && data.leagueRole.size() <= 100
+        && data.leagueRole is string && data.leagueRole.size() <= 255
         && (!data.keys().hasAny(['leagueFocus']) || data.leagueFocus is number)
         && (!data.keys().hasAny(['weeklyHours']) || (data.weeklyHours is string && data.weeklyHours.size() <= 200))
         && (!data.keys().hasAny(['roleFocus']) || (data.roleFocus is string && data.roleFocus.size() <= 2000))
@@ -53,8 +54,14 @@ service cloud.firestore {
         && data.createdAt is number
         && data.status in ['Ativo', 'Ex-membro']
         && (!data.keys().hasAny(['deletionReason']) || (data.deletionReason is string && data.deletionReason.size() <= 2000))
+        && (!data.keys().hasAny(['discordUser']) || (data.discordUser is string && data.discordUser.size() <= 100))
+        && (!data.keys().hasAny(['isInProject']) || (data.isInProject is string && data.isInProject.size() <= 50))
+        && (!data.keys().hasAny(['notInProjectStatus']) || (data.notInProjectStatus is string && data.notInProjectStatus.size() <= 200))
+        && (!data.keys().hasAny(['attendancePreference']) || (data.attendancePreference is string && data.attendancePreference.size() <= 100))
+        && (!data.keys().hasAny(['microtasksInterest']) || (data.microtasksInterest is string && data.microtasksInterest.size() <= 100))
         && (!data.keys().hasAny(['editAuthorized']) || data.editAuthorized is bool)
         && (!data.keys().hasAny(['editRequestStatus']) || data.editRequestStatus is string || data.editRequestStatus == null)
+        && (!data.keys().hasAny(['editHistory']) || data.editHistory is list)
         && (!data.keys().hasAny(['lastEditedAt']) || data.lastEditedAt is number || data.lastEditedAt == null);
     }
 
@@ -80,9 +87,63 @@ service cloud.firestore {
          && data.email is string && data.email.size() <= 255;
     }
 
+    function isValidAuditLog(data) {
+      return data.keys().hasAll(['performedByEmail', 'action', 'targetMemberName', 'timestamp'])
+        && data.performedByEmail is string && data.performedByEmail.size() <= 255
+        && (!data.keys().hasAny(['performedByName']) || (data.performedByName is string && data.performedByName.size() <= 255))
+        && (!data.keys().hasAny(['performedByUid']) || (data.performedByUid is string && data.performedByUid.size() <= 128))
+        && data.action is string && data.action.size() <= 100
+        && (!data.keys().hasAny(['targetMemberId']) || (data.targetMemberId is string && data.targetMemberId.size() <= 128))
+        && data.targetMemberName is string && data.targetMemberName.size() <= 255
+        && (!data.keys().hasAny(['targetMemberEmail']) || (data.targetMemberEmail is string && data.targetMemberEmail.size() <= 255))
+        && (!data.keys().hasAny(['details']) || (data.details is string && data.details.size() <= 4000))
+        && (!data.keys().hasAny(['previousValue']) || (data.previousValue is string && data.previousValue.size() <= 4000))
+        && (!data.keys().hasAny(['newValue']) || (data.newValue is string && data.newValue.size() <= 4000))
+        && data.timestamp is number;
+    }
+
+    function isValidProject(data) {
+      return data.keys().hasAll(['name', 'status', 'engine', 'leader', 'createdAt'])
+        && data.name is string && data.name.size() <= 255
+        && data.status is string && data.status.size() <= 50
+        && data.engine is string && data.engine.size() <= 100
+        && data.leader is string && data.leader.size() <= 255
+        && data.createdAt is number;
+    }
+
+    function isValidOpening(data) {
+      return data.keys().hasAll(['role', 'projectId', 'projectName', 'description', 'status', 'openedAt'])
+        && data.role is string && data.role.size() <= 255
+        && data.projectId is string && data.projectId.size() <= 128
+        && data.projectName is string && data.projectName.size() <= 255
+        && data.description is string && data.description.size() <= 2000
+        && data.status is string && data.status.size() <= 50
+        && data.openedAt is number;
+    }
+
+    function isValidTask(data) {
+      return data.keys().hasAll(['title', 'projectName', 'area', 'deliverySpecs', 'status', 'createdAt'])
+        && data.title is string && data.title.size() <= 255
+        && data.projectName is string && data.projectName.size() <= 255
+        && data.area is string && data.area.size() <= 100
+        && data.deliverySpecs is string && data.deliverySpecs.size() <= 2000
+        && data.status is string && data.status.size() <= 50
+        && data.createdAt is number;
+    }
+
+    function isValidProposal(data) {
+      return data.keys().hasAll(['proposerName', 'proposerEmail', 'projectTitle', 'oneSentencePitch', 'status', 'createdAt'])
+        && data.proposerName is string && data.proposerName.size() <= 255
+        && data.proposerEmail is string && data.proposerEmail.size() <= 255
+        && data.projectTitle is string && data.projectTitle.size() <= 255
+        && data.oneSentencePitch is string && data.oneSentencePitch.size() <= 1000
+        && data.status is string && data.status.size() <= 100
+        && data.createdAt is number;
+    }
+
     // 4. Match Blocks
     match /responses/{responseId} {
-      allow read: if isSignedIn() && (existing().userId == request.auth.uid || isAdmin());
+      allow read: if isSignedIn();
       
       allow create: if isSignedIn()
         && isValidId(responseId)
@@ -131,6 +192,54 @@ service cloud.firestore {
     match /admins/{adminId} {
       allow read: if isSignedIn();
       allow write: if isAdmin();
+    }
+
+    match /audit_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isSignedIn()
+        && isValidId(logId)
+        && isValidAuditLog(incoming());
+      allow update, delete: if false;
+    }
+
+    match /projects/{projectId} {
+      allow read: if isSignedIn();
+      allow create: if isAdmin()
+        && isValidId(projectId)
+        && isValidProject(incoming());
+      allow update: if isAdmin()
+        && isValidProject(incoming());
+      allow delete: if isAdmin();
+    }
+
+    match /openings/{openingId} {
+      allow read: if isSignedIn();
+      allow create: if isAdmin()
+        && isValidId(openingId)
+        && isValidOpening(incoming());
+      allow update: if isAdmin()
+        && isValidOpening(incoming());
+      allow delete: if isAdmin();
+    }
+
+    match /tasks/{taskId} {
+      allow read: if isSignedIn();
+      allow create: if isAdmin()
+        && isValidId(taskId)
+        && isValidTask(incoming());
+      allow update: if isSignedIn()
+        && isValidTask(incoming());
+      allow delete: if isAdmin();
+    }
+
+    match /proposals/{proposalId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.proposerEmail == request.auth.token.email);
+      allow create: if isSignedIn()
+        && isValidId(proposalId)
+        && isValidProposal(incoming());
+      allow update: if isAdmin()
+        && isValidProposal(incoming());
+      allow delete: if isAdmin();
     }
   }
 }

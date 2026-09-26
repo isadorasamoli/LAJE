@@ -18,11 +18,32 @@ interface CalendarProps {
   token: string;
 }
 
+interface MemberBirthday {
+  id: string;
+  memberId: string;
+  name: string;
+  email: string;
+  birthday: string;
+  leagueRole: string;
+  status: string;
+}
+
 export default function CalendarTab({ isAdmin, token }: CalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [events, setEvents] = useState<any[]>([]);
+  const [memberBirthdays, setMemberBirthdays] = useState<MemberBirthday[]>([]);
   const [loading, setLoading] = useState(true);
   
+  // Birthday modal state
+  const [selectedBirthday, setSelectedBirthday] = useState<{
+    name: string;
+    email: string;
+    leagueRole: string;
+    birthday: string;
+    age?: number;
+    date: Date;
+  } | null>(null);
+
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
@@ -47,10 +68,31 @@ export default function CalendarTab({ isAdmin, token }: CalendarProps) {
   const fetchEvents = async () => {
     try {
       setLoading(true);
+      // 1. Fetch regular calendar events
       const q = query(collection(db, 'events'), orderBy('date', 'asc'));
       const querySnapshot = await getDocs(q);
       const docs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setEvents(docs);
+
+      // 2. Fetch active members with birthday
+      // Ex-members or deleted members will not have birthdays displayed
+      const responseSnap = await getDocs(collection(db, 'responses'));
+      const bdays: MemberBirthday[] = [];
+      responseSnap.docs.forEach(docSnap => {
+        const d = docSnap.data();
+        if (d.status !== 'Ex-membro' && d.birthday && typeof d.birthday === 'string' && d.birthday.trim()) {
+          bdays.push({
+            id: `bday-${docSnap.id}`,
+            memberId: docSnap.id,
+            name: d.name || 'Membro',
+            email: d.email || '',
+            birthday: d.birthday.trim(),
+            leagueRole: d.leagueRole || '',
+            status: d.status || 'Ativo',
+          });
+        }
+      });
+      setMemberBirthdays(bdays);
     } catch (error) {
       handleFirestoreError(error, OperationType.LIST, 'events');
     } finally {
@@ -96,11 +138,15 @@ export default function CalendarTab({ isAdmin, token }: CalendarProps) {
 
   const sendEventEmail = async (eventData: any, type: 'create' | 'update' | 'delete') => {
     if (!token) return;
-    const responseSnap = await getDocs(collection(db, 'responses'));
-    const emails = responseSnap.docs
-      .map(response => response.data().email)
-      .filter((email): email is string => Boolean(email));
-    await sendEventNotification(token, emails, eventData, type);
+    try {
+      const responseSnap = await getDocs(collection(db, 'responses'));
+      const emails = responseSnap.docs
+        .map(response => response.data().email)
+        .filter((email): email is string => Boolean(email));
+      await sendEventNotification(token, emails, eventData, type);
+    } catch (e) {
+      console.info('Notificação por e-mail de evento não pôde ser enviada:', e);
+    }
   };
 
   const confirmDelete = async () => {
@@ -171,6 +217,77 @@ export default function CalendarTab({ isAdmin, token }: CalendarProps) {
   
   const days = eachDayOfInterval({ start: startDate, end: endDate });
 
+  const parseBirthdayDate = (birthdayStr: string, targetDay: Date) => {
+    if (!birthdayStr) return { matches: false };
+    let birthYear: number | null = null;
+    let birthMonth: number | null = null;
+    let birthDay: number | null = null;
+
+    if (birthdayStr.includes('-')) {
+      const parts = birthdayStr.split('-');
+      if (parts.length === 3) {
+        if (parts[0].length === 4) {
+          birthYear = parseInt(parts[0], 10);
+          birthMonth = parseInt(parts[1], 10);
+          birthDay = parseInt(parts[2], 10);
+        } else {
+          birthDay = parseInt(parts[0], 10);
+          birthMonth = parseInt(parts[1], 10);
+          birthYear = parseInt(parts[2], 10);
+        }
+      }
+    } else if (birthdayStr.includes('/')) {
+      const parts = birthdayStr.split('/');
+      if (parts.length === 3) {
+        if (parts[2].length === 4) {
+          birthDay = parseInt(parts[0], 10);
+          birthMonth = parseInt(parts[1], 10);
+          birthYear = parseInt(parts[2], 10);
+        } else if (parts[0].length === 4) {
+          birthYear = parseInt(parts[0], 10);
+          birthMonth = parseInt(parts[1], 10);
+          birthDay = parseInt(parts[2], 10);
+        }
+      }
+    }
+
+    if (!birthMonth || !birthDay || isNaN(birthMonth) || isNaN(birthDay)) {
+      return { matches: false };
+    }
+
+    const targetMonth = targetDay.getMonth() + 1;
+    const targetDayNum = targetDay.getDate();
+
+    let matches = birthMonth === targetMonth && birthDay === targetDayNum;
+    if (!matches && birthMonth === 2 && birthDay === 29 && targetMonth === 2 && targetDayNum === 28) {
+      const yr = targetDay.getFullYear();
+      const isLeap = (yr % 4 === 0 && yr % 100 !== 0) || (yr % 400 === 0);
+      if (!isLeap) matches = true;
+    }
+
+    let age: number | undefined;
+    if (matches && birthYear && !isNaN(birthYear)) {
+      age = targetDay.getFullYear() - birthYear;
+      if (age < 0) age = undefined;
+    }
+
+    return { matches, age };
+  };
+
+  const isBirthdayMatchingSearch = (bday: MemberBirthday) => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      bday.name.toLowerCase().includes(q) ||
+      bday.email.toLowerCase().includes(q) ||
+      bday.leagueRole.toLowerCase().includes(q) ||
+      'aniversário'.includes(q) ||
+      'aniversario'.includes(q) ||
+      'parabéns'.includes(q) ||
+      'parabens'.includes(q)
+    );
+  };
+
   const filteredEvents = events.filter(e => {
     if (!searchQuery) return true;
     const lowerQuery = searchQuery.toLowerCase();
@@ -187,7 +304,7 @@ export default function CalendarTab({ isAdmin, token }: CalendarProps) {
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 opacity-40 text-[var(--color-ink)]" size={20} />
         <input 
           type="text" 
-          placeholder="BUSCAR EVENTOS POR TÍTULO OU DESCRIÇÃO..." 
+          placeholder="BUSCAR EVENTOS OU ANIVERSÁRIOS..." 
           value={searchQuery}
           onChange={e => setSearchQuery(e.target.value)}
           className="w-full max-w-[500px] bg-transparent border border-[var(--color-ink-faint)] py-[14px] pl-[44px] pr-[14px] text-[var(--color-ink)] font-['Space_Mono'] text-[0.85rem] outline-none focus:border-[var(--color-accent)] uppercase transition-colors"
@@ -235,6 +352,20 @@ export default function CalendarTab({ isAdmin, token }: CalendarProps) {
                 return isSameDay(parseISO(e.date), day);
               });
 
+              // Find birthdays for this day
+              const dayBirthdays = memberBirthdays
+                .filter(isBirthdayMatchingSearch)
+                .map(m => {
+                  const { matches, age } = parseBirthdayDate(m.birthday, day);
+                  if (!matches) return null;
+                  return {
+                    ...m,
+                    age,
+                    day
+                  };
+                })
+                .filter(Boolean) as (MemberBirthday & { age?: number; day: Date })[];
+
               return (
                 <div 
                   key={idx} 
@@ -258,6 +389,30 @@ export default function CalendarTab({ isAdmin, token }: CalendarProps) {
                   )}
                   
                   <div className="flex-1 overflow-y-auto space-y-1 scrollbar-none w-full">
+                    {/* Birthdays first */}
+                    {dayBirthdays.map(bday => (
+                      <div 
+                        key={bday.id} 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setSelectedBirthday({
+                            name: bday.name,
+                            email: bday.email,
+                            leagueRole: bday.leagueRole,
+                            birthday: bday.birthday,
+                            age: bday.age,
+                            date: day
+                          });
+                        }}
+                        className="bg-amber-400/20 border border-amber-400/40 text-amber-300 hover:bg-amber-400/30 text-[0.65rem] px-2 py-1 rounded-sm mt-1 font-bold cursor-pointer whitespace-nowrap overflow-hidden text-ellipsis w-full text-left flex items-center gap-1 transition-colors shadow-sm"
+                        title={`Aniversário: ${bday.name}`}
+                      >
+                        <span className="shrink-0 text-[11px] leading-none">🎂</span>
+                        <span className="truncate">{bday.name}{bday.age ? ` (${bday.age})` : ''}</span>
+                      </div>
+                    ))}
+
+                    {/* Regular events */}
                     {dayEvents.map(evt => (
                       <div 
                         key={evt.id} 
@@ -420,6 +575,71 @@ export default function CalendarTab({ isAdmin, token }: CalendarProps) {
             </form>
             </>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Birthday Celebration Modal */}
+      {selectedBirthday && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm" onClick={() => setSelectedBirthday(null)}>
+          <div className="bg-[var(--color-bg-dark)] border border-amber-400/40 w-full max-w-md shadow-2xl p-8 relative overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-amber-400 via-pink-400 to-emerald-400" />
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-lg font-bold text-[var(--color-ink)] font-['Syne'] uppercase flex items-center gap-2">
+                <span className="text-2xl">🎂</span>
+                Aniversário do Membro
+              </h3>
+              <button onClick={() => setSelectedBirthday(null)} className="text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] bg-transparent border-none cursor-pointer">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="p-5 bg-amber-400/10 border border-amber-400/20 text-center rounded-sm">
+                <div className="text-4xl mb-2">🎉</div>
+                <h4 className="text-xl font-bold text-[var(--color-ink)] font-['Syne']">{selectedBirthday.name}</h4>
+                {selectedBirthday.age ? (
+                  <p className="text-xs font-bold text-amber-300 font-['Space_Mono'] mt-1">
+                    Comemorando {selectedBirthday.age} anos hoje! 🎈
+                  </p>
+                ) : (
+                  <p className="text-xs font-bold text-amber-300 font-['Space_Mono'] mt-1">
+                    Dia de festa na LAJE! 🎈
+                  </p>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="p-3 bg-[rgba(255,255,255,0.02)] border border-[var(--color-ink-faint)]">
+                  <span className="text-[10px] text-gray-500 uppercase font-bold block mb-1">Data</span>
+                  <span className="text-[var(--color-ink)] font-semibold font-['Space_Mono'] text-sm">
+                    {format(selectedBirthday.date, 'dd/MM')}
+                  </span>
+                </div>
+                <div className="p-3 bg-[rgba(255,255,255,0.02)] border border-[var(--color-ink-faint)]">
+                  <span className="text-[10px] text-gray-500 uppercase font-bold block mb-1">Status</span>
+                  <span className="text-emerald-400 font-semibold text-xs">Membro Ativo</span>
+                </div>
+              </div>
+
+              {selectedBirthday.leagueRole && (
+                <div className="p-3 bg-[rgba(255,255,255,0.02)] border border-[var(--color-ink-faint)] text-sm">
+                  <span className="text-[10px] text-gray-500 uppercase font-bold block mb-1">Função na LAJE</span>
+                  <span className="text-[var(--color-accent)] font-semibold">{selectedBirthday.leagueRole}</span>
+                </div>
+              )}
+
+              {selectedBirthday.email && (
+                <div className="p-3 bg-[rgba(255,255,255,0.02)] border border-[var(--color-ink-faint)] text-sm">
+                  <span className="text-[10px] text-gray-500 uppercase font-bold block mb-1">E-mail</span>
+                  <span className="text-gray-300 font-medium text-xs break-all">{selectedBirthday.email}</span>
+                </div>
+              )}
+            </div>
+
+            <button onClick={() => setSelectedBirthday(null)} className="mt-6 w-full px-4 py-3 bg-[var(--color-ink-faint)] hover:bg-[rgba(255,255,255,0.1)] text-[var(--color-ink)] font-bold text-xs uppercase tracking-wider transition-colors cursor-pointer border-none font-['Space_Mono']">
+              Fechar
+            </button>
           </div>
         </div>
       )}

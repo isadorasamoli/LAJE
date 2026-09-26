@@ -1,10 +1,21 @@
-import { useState, ChangeEvent, FormEvent, useEffect } from 'react';
+import { useState, ChangeEvent, FormEvent, useEffect, useRef } from 'react';
 import { User } from 'firebase/auth';
 import { collection, doc, setDoc, query, where, getDocs, updateDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { handleFirestoreError, OperationType } from '../lib/utils';
-import { CheckCircle, Loader2, Send } from 'lucide-react';
+import { logAuditAction } from '../lib/audit';
+import { CheckCircle, Loader2, Send, ChevronDown, Check } from 'lucide-react';
 import { toast } from 'react-hot-toast';
+
+const AVAILABLE_ROLES = [
+  'Programação',
+  'Arte',
+  'Game Design',
+  'Som',
+  'Produção',
+  'Marketing',
+  'RH'
+];
 
 interface FormProps {
   user: User | null;
@@ -21,6 +32,8 @@ export default function Form({ user, token }: FormProps) {
 
   const [formData, setFormData] = useState({
     name: user?.displayName || '',
+    birthday: '',
+    discordUser: '',
     course: '',
     period: '',
     collegeFocus: 3,
@@ -29,12 +42,29 @@ export default function Form({ user, token }: FormProps) {
     weeklyHours: '4h',
     roleFocus: '',
     learningFocus: '',
+    isInProject: 'Não',
     currentProjects: '',
+    notInProjectStatus: 'Quero entrar em um projeto e estou procurando',
     interestedProjects: '',
+    attendancePreference: 'Sim, sem problema',
+    microtasksInterest: 'Sim, me avisem quando abrir',
     priority: 'Média',
     progress: 0,
     deadline: '',
   });
+
+  const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
+  const roleDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (roleDropdownRef.current && !roleDropdownRef.current.contains(event.target as Node)) {
+        setIsRoleDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const fetchExisting = async () => {
@@ -46,24 +76,28 @@ export default function Form({ user, token }: FormProps) {
           const data = snap.docs[0].data();
           setExistingResponse({ id: snap.docs[0].id, ...data });
           
-          if (data.editAuthorized) {
-            setFormData({
-              name: data.name || '',
-              course: data.course || '',
-              period: data.period || '',
-              collegeFocus: data.collegeFocus || 3,
-              leagueRole: data.leagueRole || 'Programação',
-              leagueFocus: data.leagueFocus || 3,
-              weeklyHours: data.weeklyHours || '4h',
-              roleFocus: data.roleFocus || '',
-              learningFocus: data.learningFocus || '',
-              currentProjects: data.currentProjects || '',
-              interestedProjects: data.interestedProjects || '',
-              priority: data.priority || 'Média',
-              progress: data.progress || 0,
-              deadline: data.deadline || '',
-            });
-          }
+          setFormData({
+            name: data.name || '',
+            birthday: data.birthday || '',
+            discordUser: data.discordUser || '',
+            course: data.course || '',
+            period: data.period || '',
+            collegeFocus: data.collegeFocus ?? 3,
+            leagueRole: data.leagueRole || 'Programação',
+            leagueFocus: data.leagueFocus ?? 3,
+            weeklyHours: data.weeklyHours || '4h',
+            roleFocus: data.roleFocus || '',
+            learningFocus: data.learningFocus || '',
+            isInProject: data.isInProject || (data.currentProjects ? 'Sim' : 'Não'),
+            currentProjects: data.currentProjects || '',
+            notInProjectStatus: data.notInProjectStatus || 'Quero entrar em um projeto e estou procurando',
+            interestedProjects: data.interestedProjects || '',
+            attendancePreference: data.attendancePreference || 'Sim, sem problema',
+            microtasksInterest: data.microtasksInterest || 'Sim, me avisem quando abrir',
+            priority: data.priority || 'Média',
+            progress: data.progress ?? 0,
+            deadline: data.deadline || '',
+          });
         }
       } catch (err) {
         console.error("Failed to fetch existing response", err);
@@ -146,6 +180,8 @@ export default function Form({ user, token }: FormProps) {
         userId: user.uid,
         email: user.email || '',
         name: formData.name,
+        birthday: formData.birthday || '',
+        discordUser: formData.discordUser || '',
         course: formData.course,
         period: formData.period,
         collegeFocus: Number(formData.collegeFocus || 0),
@@ -154,8 +190,12 @@ export default function Form({ user, token }: FormProps) {
         weeklyHours: formData.weeklyHours || '',
         roleFocus: formData.roleFocus,
         learningFocus: formData.learningFocus,
+        isInProject: formData.isInProject,
         currentProjects: formData.currentProjects,
+        notInProjectStatus: formData.notInProjectStatus || '',
         interestedProjects: formData.interestedProjects,
+        attendancePreference: formData.attendancePreference || '',
+        microtasksInterest: formData.microtasksInterest || '',
         priority: formData.priority,
         progress: Number(formData.progress),
         deadline: formData.deadline,
@@ -169,6 +209,48 @@ export default function Form({ user, token }: FormProps) {
           editAuthorized: false,
           editRequestStatus: null
         });
+
+        // Record audit log for data update
+        const changedFields: string[] = [];
+        if (existingResponse.name !== responseData.name) changedFields.push(`Nome`);
+        if (existingResponse.birthday !== responseData.birthday) changedFields.push(`Aniversário`);
+        if (existingResponse.course !== responseData.course) changedFields.push(`Curso`);
+        if (existingResponse.period !== responseData.period) changedFields.push(`Período`);
+        if (existingResponse.leagueRole !== responseData.leagueRole) changedFields.push(`Área`);
+        if (existingResponse.weeklyHours !== responseData.weeklyHours) changedFields.push(`Horas`);
+        if (existingResponse.progress !== responseData.progress) changedFields.push(`Progresso`);
+        if (existingResponse.currentProjects !== responseData.currentProjects) changedFields.push(`Projetos`);
+
+        await logAuditAction({
+          action: 'Atualização de Dados',
+          targetMemberId: existingResponse.id,
+          targetMemberName: responseData.name,
+          targetMemberEmail: responseData.email,
+          details: changedFields.length > 0 
+            ? `Membro atualizou dados cadastrais (${changedFields.join(', ')})`
+            : `Membro atualizou dados do formulário`,
+          previousValue: JSON.stringify({
+            name: existingResponse.name,
+            course: existingResponse.course,
+            period: existingResponse.period,
+            leagueRole: existingResponse.leagueRole,
+            progress: existingResponse.progress,
+            weeklyHours: existingResponse.weeklyHours,
+            currentProjects: existingResponse.currentProjects,
+          }),
+          newValue: JSON.stringify({
+            name: responseData.name,
+            course: responseData.course,
+            period: responseData.period,
+            leagueRole: responseData.leagueRole,
+            progress: responseData.progress,
+            weeklyHours: responseData.weeklyHours,
+            currentProjects: responseData.currentProjects,
+          }),
+          performedByEmail: user.email || '',
+          performedByName: user.displayName || user.email || '',
+        });
+
         toast.success('Formulário atualizado com sucesso!');
         setExistingResponse({ ...existingResponse, editAuthorized: false, editRequestStatus: null });
       } else {
@@ -223,6 +305,41 @@ export default function Form({ user, token }: FormProps) {
   const today = new Date().toISOString().split('T')[0];
   const isReadOnly = existingResponse && !existingResponse.editAuthorized;
 
+  const selectedRoles: string[] = formData.leagueRole
+    ? formData.leagueRole.split(',').map(r => r.trim()).filter(Boolean)
+    : [];
+
+  const toggleRole = (role: string) => {
+    if (isReadOnly) return;
+    let newRoles: string[];
+    if (selectedRoles.includes(role)) {
+      if (selectedRoles.length <= 1) {
+        toast.error('Selecione pelo menos uma função atual');
+        return;
+      }
+      newRoles = selectedRoles.filter(r => r !== role);
+    } else {
+      newRoles = [...selectedRoles, role];
+    }
+    setFormData(prev => ({
+      ...prev,
+      leagueRole: newRoles.join(', ')
+    }));
+  };
+
+  const removeRole = (role: string) => {
+    if (isReadOnly) return;
+    if (selectedRoles.length <= 1) {
+      toast.error('Selecione pelo menos uma função atual');
+      return;
+    }
+    const newRoles = selectedRoles.filter(r => r !== role);
+    setFormData(prev => ({
+      ...prev,
+      leagueRole: newRoles.join(', ')
+    }));
+  };
+
   return (
     <form onSubmit={handleSubmit} className="w-full max-w-3xl mx-auto space-y-8 pb-12">
       {existingResponse && (
@@ -259,21 +376,65 @@ export default function Form({ user, token }: FormProps) {
           <span className="text-[var(--color-bg-dark)] bg-[var(--color-accent)] px-2 py-1 text-sm font-['Space_Mono']">01</span> Dados Pessoais & Acadêmicos
         </h3>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase text-gray-500">Nome do Membro</label>
-            <input required name="name" value={formData.name} onChange={handleChange} placeholder="Ex: Maria Silva" disabled={isReadOnly}
-              className={`w-full bg-transparent border border-[var(--color-ink-faint)] focus:border-[var(--color-accent)] text-[var(--color-ink)] p-3 outline-none transition-all ${isReadOnly ? 'opacity-50' : ''}`} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2 md:col-span-2">
+            <label className="text-xs font-semibold uppercase text-gray-400">Nome do Membro</label>
+            <input 
+              required 
+              name="name" 
+              value={formData.name} 
+              onChange={handleChange} 
+              placeholder="Ex: Maria Silva" 
+              disabled={isReadOnly}
+              className={`w-full h-11 bg-transparent border border-[var(--color-ink-faint)] focus:border-[var(--color-accent)] text-[var(--color-ink)] px-3 outline-none transition-all ${isReadOnly ? 'opacity-50' : ''}`} 
+            />
           </div>
           <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase text-gray-500">Curso</label>
-            <input required name="course" value={formData.course} onChange={handleChange} placeholder="Ex: Ciência da Computação" disabled={isReadOnly}
-              className={`w-full bg-transparent border border-[var(--color-ink-faint)] focus:border-[var(--color-accent)] text-[var(--color-ink)] p-3 outline-none transition-all ${isReadOnly ? 'opacity-50' : ''}`} />
+            <label className="text-xs font-semibold uppercase text-gray-400">Usuário do Discord</label>
+            <input 
+              required 
+              name="discordUser" 
+              value={formData.discordUser} 
+              onChange={handleChange} 
+              placeholder="Ex: @usuario_laje" 
+              disabled={isReadOnly}
+              className={`w-full h-11 bg-transparent border border-[var(--color-ink-faint)] focus:border-[var(--color-accent)] text-[var(--color-ink)] px-3 outline-none transition-all ${isReadOnly ? 'opacity-50' : ''}`} 
+            />
           </div>
           <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase text-gray-500">Período</label>
-            <input required name="period" value={formData.period} onChange={handleChange} placeholder="Ex: 5º Período" disabled={isReadOnly}
-              className={`w-full bg-transparent border border-[var(--color-ink-faint)] focus:border-[var(--color-accent)] text-[var(--color-ink)] p-3 outline-none transition-all ${isReadOnly ? 'opacity-50' : ''}`} />
+            <label className="text-xs font-semibold uppercase text-gray-400">Data de Aniversário</label>
+            <input 
+              type="date" 
+              name="birthday" 
+              value={formData.birthday} 
+              onChange={handleChange} 
+              disabled={isReadOnly}
+              className={`w-full h-11 bg-transparent border border-[var(--color-ink-faint)] focus:border-[var(--color-accent)] text-[var(--color-ink)] px-3 outline-none transition-all [color-scheme:dark] ${isReadOnly ? 'opacity-50' : ''}`} 
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-semibold uppercase text-gray-400">Curso</label>
+            <input 
+              required 
+              name="course" 
+              value={formData.course} 
+              onChange={handleChange} 
+              placeholder="Ex: Ciência da Computação" 
+              disabled={isReadOnly}
+              className={`w-full h-11 bg-transparent border border-[var(--color-ink-faint)] focus:border-[var(--color-accent)] text-[var(--color-ink)] px-3 outline-none transition-all ${isReadOnly ? 'opacity-50' : ''}`} 
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-semibold uppercase text-gray-400">Período</label>
+            <input 
+              required 
+              name="period" 
+              value={formData.period} 
+              onChange={handleChange} 
+              placeholder="Ex: 5º Período" 
+              disabled={isReadOnly}
+              className={`w-full h-11 bg-transparent border border-[var(--color-ink-faint)] focus:border-[var(--color-accent)] text-[var(--color-ink)] px-3 outline-none transition-all ${isReadOnly ? 'opacity-50' : ''}`} 
+            />
           </div>
         </div>
       </section>
@@ -287,17 +448,90 @@ export default function Form({ user, token }: FormProps) {
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase text-gray-500">Função Atual</label>
-            <select name="leagueRole" value={formData.leagueRole} onChange={handleChange} disabled={isReadOnly}
-              className={`w-full bg-transparent border border-[var(--color-ink-faint)] focus:border-[var(--color-accent)] text-[var(--color-ink)] p-3 outline-none transition-all cursor-pointer ${isReadOnly ? 'opacity-50' : ''}`}>
-              <option className="bg-gray-900 text-gray-200">Programação</option>
-              <option className="bg-gray-900 text-gray-200">Arte</option>
-              <option className="bg-gray-900 text-gray-200">Game Design</option>
-              <option className="bg-gray-900 text-gray-200">Som</option>
-              <option className="bg-gray-900 text-gray-200">Produção</option>
-              <option className="bg-gray-900 text-gray-200">Marketing</option>
-              <option className="bg-gray-900 text-gray-200">RH</option>
-            </select>
+            <div className="flex justify-between items-center">
+              <label className="text-xs font-semibold uppercase text-gray-500">
+                Função Atual
+              </label>
+              <span className="text-[10px] text-[var(--color-accent)] font-medium font-['Space_Mono']">
+                {selectedRoles.length > 1 ? `${selectedRoles.length} selecionadas` : 'Escolha uma ou mais'}
+              </span>
+            </div>
+            
+            <div className="relative" ref={roleDropdownRef}>
+              <button
+                type="button"
+                id="leagueRole"
+                aria-label="Selecionar função atual"
+                onClick={() => !isReadOnly && setIsRoleDropdownOpen(!isRoleDropdownOpen)}
+                disabled={isReadOnly}
+                className={`w-full min-h-[48px] bg-transparent border border-[var(--color-ink-faint)] focus:border-[var(--color-accent)] text-[var(--color-ink)] p-2.5 outline-none transition-all flex items-center justify-between gap-2 text-left cursor-pointer ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <div className="flex flex-wrap gap-1.5 items-center flex-1">
+                  {selectedRoles.length === 0 ? (
+                    <span className="text-gray-500 text-sm">Selecione uma ou mais funções...</span>
+                  ) : (
+                    selectedRoles.map(role => (
+                      <span
+                        key={role}
+                        className="inline-flex items-center gap-1.5 bg-[var(--color-accent)]/15 border border-[var(--color-accent)]/30 text-[var(--color-accent)] text-xs font-semibold px-2 py-0.5 rounded-sm"
+                      >
+                        <span>{role}</span>
+                        {!isReadOnly && (
+                          <span
+                            role="button"
+                            tabIndex={0}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeRole(role);
+                            }}
+                            className="hover:text-white transition-colors cursor-pointer text-xs leading-none ml-0.5 font-bold"
+                            title={`Remover ${role}`}
+                          >
+                            ×
+                          </span>
+                        )}
+                      </span>
+                    ))
+                  )}
+                </div>
+                <ChevronDown size={18} className={`text-gray-400 transition-transform duration-200 shrink-0 ${isRoleDropdownOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {isRoleDropdownOpen && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-gray-950 border border-[var(--color-ink-faint)] shadow-2xl z-30 p-2 space-y-1 rounded-sm max-h-64 overflow-y-auto">
+                  <div className="text-[10px] text-gray-500 uppercase px-2 py-1 font-semibold tracking-wider border-b border-gray-800 mb-1 flex justify-between items-center">
+                    <span>Clique para marcar / desmarcar</span>
+                    <span className="text-emerald-500 font-bold">{selectedRoles.length} selecionada(s)</span>
+                  </div>
+                  {AVAILABLE_ROLES.map(role => {
+                    const isChecked = selectedRoles.includes(role);
+                    return (
+                      <div
+                        key={role}
+                        onClick={() => toggleRole(role)}
+                        className={`flex items-center justify-between px-3 py-2 rounded text-sm cursor-pointer transition-colors ${
+                          isChecked 
+                            ? 'bg-[var(--color-accent)]/20 text-[var(--color-accent)] font-semibold' 
+                            : 'text-gray-300 hover:bg-gray-800/80 hover:text-white'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => {}} // handled by click on parent div
+                            className="accent-[var(--color-accent)] cursor-pointer rounded w-4 h-4"
+                          />
+                          <span>{role}</span>
+                        </div>
+                        {isChecked && <Check size={16} className="text-[var(--color-accent)]" />}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+            <input type="hidden" name="leagueRole" value={formData.leagueRole} />
           </div>
           <div className="space-y-2">
             <label htmlFor="weeklyHours" className="text-xs font-semibold uppercase text-gray-500">
@@ -344,26 +578,121 @@ export default function Form({ user, token }: FormProps) {
         </div>
       </section>
 
-      {/* Projetos & Tarefas */}
-      <section className="p-8 bg-[rgba(255,255,255,0.02)] border border-[var(--color-ink-faint)] relative overflow-hidden">
+      {/* Projetos & Situação de Entrada na Liga */}
+      <section className="p-8 bg-[rgba(255,255,255,0.02)] border border-[var(--color-ink-faint)] relative overflow-hidden space-y-6">
         <div className="absolute top-0 left-0 w-1.5 h-full bg-[var(--color-accent)]" />
-        <h3 className="text-[var(--color-ink)] text-lg font-bold mb-6 flex items-center gap-2 uppercase tracking-[-0.04em] font-['Syne']">
-          <span className="text-[var(--color-bg-dark)] bg-[var(--color-accent)] px-2 py-1 text-sm font-['Space_Mono']">03</span> Projetos & Tarefas
-        </h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-          <div className="space-y-2">
-            <label className="text-xs font-semibold uppercase text-gray-500">Projetos Atuais</label>
-            <input required name="currentProjects" value={formData.currentProjects} onChange={handleChange} placeholder="Ex: Jogo X, Treinamento Y" disabled={isReadOnly}
-              className={`w-full bg-transparent border border-[var(--color-ink-faint)] focus:border-[var(--color-accent)] text-[var(--color-ink)] p-3 outline-none transition-all ${isReadOnly ? 'opacity-50' : ''}`} />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <h3 className="text-[var(--color-ink)] text-lg font-bold flex items-center gap-2 uppercase tracking-[-0.04em] font-['Syne']">
+            <span className="text-[var(--color-bg-dark)] bg-[var(--color-accent)] px-2 py-1 text-sm font-['Space_Mono']">03</span> Situação em Projetos & Disponibilidade
+          </h3>
+          <span className="text-xs text-amber-400 font-['Space_Mono']">Inversão do Convite</span>
+        </div>
+
+        {/* Pergunta 5: Você está em algum projeto da LAJE hoje? */}
+        <div className="p-4 bg-black/30 border border-gray-800 space-y-3">
+          <label className="text-xs font-semibold uppercase text-gray-300 font-['Space_Mono'] block">
+            5. Você está em algum projeto de jogo da LAJE hoje? *
+          </label>
+          <div className="flex gap-4">
+            <label className="flex items-center gap-2 text-xs text-white cursor-pointer font-['Space_Mono']">
+              <input
+                type="radio"
+                name="isInProject"
+                value="Sim"
+                checked={formData.isInProject === 'Sim'}
+                onChange={() => setFormData(prev => ({ ...prev, isInProject: 'Sim' }))}
+                disabled={isReadOnly}
+                className="accent-emerald-500"
+              />
+              Sim
+            </label>
+            <label className="flex items-center gap-2 text-xs text-white cursor-pointer font-['Space_Mono']">
+              <input
+                type="radio"
+                name="isInProject"
+                value="Não"
+                checked={formData.isInProject === 'Não'}
+                onChange={() => setFormData(prev => ({ ...prev, isInProject: 'Não' }))}
+                disabled={isReadOnly}
+                className="accent-emerald-500"
+              />
+              Não
+            </label>
           </div>
-          <div className="flex flex-col justify-end">
-            <input id="interestedProjects" name="interestedProjects" value={formData.interestedProjects} onChange={handleChange} placeholder="Interesse em novos projetos? (Ex: área/jogo específico)" disabled={isReadOnly}
-              className={`w-full bg-transparent border border-[var(--color-ink-faint)] focus:border-[var(--color-accent)] text-[var(--color-ink)] p-3 outline-none transition-all ${isReadOnly ? 'opacity-50' : ''}`} />
+
+          {formData.isInProject === 'Sim' ? (
+            <div className="space-y-1.5 pt-2 border-t border-gray-800">
+              <label className="text-xs font-semibold uppercase text-gray-400">Em qual(is) projeto(s) você está e o que faz?</label>
+              <input
+                required
+                name="currentProjects"
+                value={formData.currentProjects}
+                onChange={handleChange}
+                placeholder="Ex: Depois do Espetáculo (Programação de IA)"
+                disabled={isReadOnly}
+                className={`w-full bg-transparent border border-[var(--color-ink-faint)] focus:border-[var(--color-accent)] text-[var(--color-ink)] p-3 outline-none text-xs font-['Space_Mono'] ${isReadOnly ? 'opacity-50' : ''}`}
+              />
+            </div>
+          ) : (
+            <div className="space-y-2 pt-2 border-t border-gray-800">
+              <label className="text-xs font-semibold uppercase text-amber-400 font-['Space_Mono'] block">
+                Se não está em nenhum projeto, qual frase combina mais com você?
+              </label>
+              <select
+                name="notInProjectStatus"
+                value={formData.notInProjectStatus}
+                onChange={handleChange}
+                disabled={isReadOnly}
+                className={`w-full bg-[#161619] border border-[var(--color-ink-faint)] text-xs text-gray-200 p-2.5 outline-none font-['Space_Mono'] ${isReadOnly ? 'opacity-50' : ''}`}
+              >
+                <option value="Quero entrar em um projeto e estou procurando">Quero entrar em um projeto e estou procurando</option>
+                <option value="Quero entrar, mas não sei como nem com quem falar">Quero entrar, mas não sei como nem com quem falar</option>
+                <option value="Já tentei entrar e não consegui">Já tentei entrar e não consegui</option>
+                <option value="Por enquanto prefiro só acompanhar a liga">Por enquanto prefiro só acompanhar a liga</option>
+                <option value="Entrei por curiosidade e não pretendo participar de projeto">Entrei por curiosidade e não pretendo participar de projeto</option>
+              </select>
+            </div>
+          )}
+        </div>
+
+        {/* Presencialidade & Mural de Tarefas */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <label className="text-xs font-semibold uppercase text-gray-400 font-['Space_Mono']">
+              10. Dá para você aparecer nos encontros presenciais?
+            </label>
+            <select
+              name="attendancePreference"
+              value={formData.attendancePreference}
+              onChange={handleChange}
+              disabled={isReadOnly}
+              className={`w-full bg-[#161619] border border-[var(--color-ink-faint)] text-xs text-gray-200 p-2.5 outline-none font-['Space_Mono'] ${isReadOnly ? 'opacity-50' : ''}`}
+            >
+              <option value="Sim, sem problema">Sim, sem problema</option>
+              <option value="Dá, mas depende do dia e do horário">Dá, mas depende do dia e do horário</option>
+              <option value="Não consigo, só participo online">Não consigo, só participo online</option>
+            </select>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-semibold uppercase text-gray-400 font-['Space_Mono']">
+              11. Toparia tarefas pequenas e pontuais no Mural?
+            </label>
+            <select
+              name="microtasksInterest"
+              value={formData.microtasksInterest}
+              onChange={handleChange}
+              disabled={isReadOnly}
+              className={`w-full bg-[#161619] border border-[var(--color-ink-faint)] text-xs text-gray-200 p-2.5 outline-none font-['Space_Mono'] ${isReadOnly ? 'opacity-50' : ''}`}
+            >
+              <option value="Sim, me avisem quando abrir">Sim, me avisem quando abrir</option>
+              <option value="Talvez, depende da tarefa">Talvez, depende da tarefa</option>
+              <option value="Prefiro entrar em um projeto inteiro">Prefiro entrar em um projeto inteiro</option>
+            </select>
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
           <div className="space-y-2">
             <label className="text-xs font-semibold uppercase text-gray-500">Nível de Prioridade</label>
             <select name="priority" value={formData.priority} onChange={handleChange} disabled={isReadOnly}

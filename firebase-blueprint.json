@@ -8,16 +8,22 @@
         "userId": { "type": "string", "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
         "email": { "type": "string", "maxLength": 255 },
         "name": { "type": "string", "maxLength": 255 },
+        "birthday": { "type": "string", "maxLength": 50 },
+        "discordUser": { "type": "string", "maxLength": 100 },
         "course": { "type": "string", "maxLength": 255 },
         "period": { "type": "string", "maxLength": 50 },
         "collegeFocus": { "type": "number" },
-        "leagueRole": { "type": "string", "maxLength": 100 },
+        "leagueRole": { "type": "string", "maxLength": 255 },
         "leagueFocus": { "type": "number" },
         "weeklyHours": { "type": "string", "maxLength": 200 },
         "roleFocus": { "type": "string", "maxLength": 2000 },
         "learningFocus": { "type": "string", "maxLength": 2000 },
+        "isInProject": { "type": "string", "maxLength": 50 },
         "currentProjects": { "type": "string", "maxLength": 1000 },
+        "notInProjectStatus": { "type": "string", "maxLength": 200 },
         "interestedProjects": { "type": "string", "maxLength": 1000 },
+        "attendancePreference": { "type": "string", "maxLength": 100 },
+        "microtasksInterest": { "type": "string", "maxLength": 100 },
         "priority": { "type": "string", "maxLength": 50 },
         "progress": { "type": "number" },
         "deadline": { "type": "string", "maxLength": 50 },
@@ -62,6 +68,119 @@
         "email": { "type": "string", "maxLength": 255 }
       },
       "required": ["email"]
+    },
+    "AuditLog": {
+      "title": "Audit Log",
+      "description": "Internal audit log recording who altered a member's status or data.",
+      "type": "object",
+      "properties": {
+        "performedByEmail": { "type": "string", "maxLength": 255 },
+        "performedByName": { "type": "string", "maxLength": 255 },
+        "performedByUid": { "type": "string", "maxLength": 128 },
+        "action": { "type": "string", "maxLength": 100 },
+        "targetMemberId": { "type": "string", "maxLength": 128 },
+        "targetMemberName": { "type": "string", "maxLength": 255 },
+        "targetMemberEmail": { "type": "string", "maxLength": 255 },
+        "details": { "type": "string", "maxLength": 4000 },
+        "previousValue": { "type": "string", "maxLength": 4000 },
+        "newValue": { "type": "string", "maxLength": 4000 },
+        "timestamp": { "type": "number" }
+      },
+      "required": ["performedByEmail", "action", "targetMemberName", "timestamp"]
+    },
+    "Project": {
+      "title": "Game Project",
+      "description": "Official game project developed within LAJE.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 255 },
+        "status": { "type": "string", "maxLength": 50 },
+        "engine": { "type": "string", "maxLength": 100 },
+        "genre": { "type": "string", "maxLength": 200 },
+        "leader": { "type": "string", "maxLength": 255 },
+        "leaderDiscord": { "type": "string", "maxLength": 100 },
+        "responsibleDirector": { "type": "string", "maxLength": 255 },
+        "semester": { "type": "string", "maxLength": 50 },
+        "description": { "type": "string", "maxLength": 2000 },
+        "elevatorPitch": { "type": "string", "maxLength": 2000 },
+        "diferencial": { "type": "string", "maxLength": 2000 },
+        "pilares": { "type": "string", "maxLength": 2000 },
+        "targetScope": { "type": "string", "maxLength": 1000 },
+        "lastCheckInDate": { "type": "string", "maxLength": 50 },
+        "lastCheckInNotes": { "type": "string", "maxLength": 2000 },
+        "repositoryUrl": { "type": "string", "maxLength": 500 },
+        "buildUrl": { "type": "string", "maxLength": 500 },
+        "itchUrl": { "type": "string", "maxLength": 500 },
+        "teamMembers": { "type": "string", "maxLength": 2000 },
+        "coverEmoji": { "type": "string", "maxLength": 10 },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["name", "status", "engine", "leader", "createdAt"]
+    },
+    "Opening": {
+      "title": "Project Opening",
+      "description": "Recruitment opening for a specific game project.",
+      "type": "object",
+      "properties": {
+        "role": { "type": "string", "maxLength": 255 },
+        "projectId": { "type": "string", "maxLength": 128 },
+        "projectName": { "type": "string", "maxLength": 255 },
+        "description": { "type": "string", "maxLength": 2000 },
+        "acceptsBeginners": { "type": "boolean" },
+        "estimatedTime": { "type": "string", "maxLength": 100 },
+        "status": { "type": "string", "maxLength": 50 },
+        "openedAt": { "type": "number" },
+        "filledBy": { "type": "string", "maxLength": 255 }
+      },
+      "required": ["role", "projectId", "projectName", "description", "status", "openedAt"]
+    },
+    "Task": {
+      "title": "Mural Task",
+      "description": "Small standalone task for members to contribute without fixed commitment.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 255 },
+        "projectId": { "type": "string", "maxLength": 128 },
+        "projectName": { "type": "string", "maxLength": 255 },
+        "area": { "type": "string", "maxLength": 100 },
+        "deliverySpecs": { "type": "string", "maxLength": 2000 },
+        "size": { "type": "string", "maxLength": 50 },
+        "beginnerFriendly": { "type": "boolean" },
+        "deadline": { "type": "string", "maxLength": 50 },
+        "referenceUrl": { "type": "string", "maxLength": 500 },
+        "helper": { "type": "string", "maxLength": 255 },
+        "status": { "type": "string", "maxLength": 50 },
+        "claimedBy": { "type": "string", "maxLength": 255 },
+        "claimedByEmail": { "type": "string", "maxLength": 255 },
+        "claimedAt": { "type": "number" },
+        "deliveredAt": { "type": "number" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["title", "projectName", "area", "deliverySpecs", "status", "createdAt"]
+    },
+    "Proposal": {
+      "title": "Game Proposal",
+      "description": "Game idea proposal submitted by a member to the board.",
+      "type": "object",
+      "properties": {
+        "proposerName": { "type": "string", "maxLength": 255 },
+        "proposerDiscord": { "type": "string", "maxLength": 100 },
+        "proposerEmail": { "type": "string", "maxLength": 255 },
+        "proposerUid": { "type": "string", "maxLength": 128 },
+        "projectTitle": { "type": "string", "maxLength": 255 },
+        "oneSentencePitch": { "type": "string", "maxLength": 1000 },
+        "genreAndReferences": { "type": "string", "maxLength": 2000 },
+        "differentiation": { "type": "string", "maxLength": 2000 },
+        "engine": { "type": "string", "maxLength": 100 },
+        "projectScopeAndDeadline": { "type": "string", "maxLength": 500 },
+        "teamAndNeeds": { "type": "string", "maxLength": 2000 },
+        "visualAttachmentsUrl": { "type": "string", "maxLength": 500 },
+        "status": { "type": "string", "maxLength": 100 },
+        "boardFeedback": { "type": "string", "maxLength": 2000 },
+        "respondedAt": { "type": "number" },
+        "createdAt": { "type": "number" }
+      },
+      "required": ["proposerName", "proposerEmail", "projectTitle", "oneSentencePitch", "status", "createdAt"]
     }
   },
   "firestore": {
@@ -80,6 +199,26 @@
     "/admins/{adminId}": {
       "schema": "Admin",
       "description": "Authorized administrators."
+    },
+    "/audit_logs/{logId}": {
+      "schema": "AuditLog",
+      "description": "Audit trail of member modifications and status changes."
+    },
+    "/projects/{projectId}": {
+      "schema": "Project",
+      "description": "LAJE game projects catalogue and management."
+    },
+    "/openings/{openingId}": {
+      "schema": "Opening",
+      "description": "Open recruitment positions for LAJE game projects."
+    },
+    "/tasks/{taskId}": {
+      "schema": "Task",
+      "description": "Mural of small standalone tasks for easy onboarding."
+    },
+    "/proposals/{proposalId}": {
+      "schema": "Proposal",
+      "description": "New game project proposals evaluated by the board."
     }
   }
 }

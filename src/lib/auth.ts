@@ -10,12 +10,7 @@ export const initAuth = (
 ) => {
   return onAuthStateChanged(auth, async (user: User | null) => {
     if (user) {
-      if (cachedAccessToken) {
-        if (onAuthSuccess) onAuthSuccess(user, cachedAccessToken);
-      } else if (!isSigningIn) {
-        cachedAccessToken = null;
-        if (onAuthFailure) onAuthFailure();
-      }
+      if (onAuthSuccess) onAuthSuccess(user, cachedAccessToken || '');
     } else {
       cachedAccessToken = null;
       if (onAuthFailure) onAuthFailure();
@@ -28,11 +23,7 @@ export const googleSignIn = async (): Promise<{ user: User; accessToken: string 
     isSigningIn = true;
     const result = await signInWithPopup(auth, provider);
     const credential = GoogleAuthProvider.credentialFromResult(result);
-    if (!credential?.accessToken) {
-      throw new Error('Failed to get access token from Firebase Auth');
-    }
-
-    cachedAccessToken = credential.accessToken;
+    cachedAccessToken = credential?.accessToken || '';
     return { user: result.user, accessToken: cachedAccessToken };
   } catch (error: any) {
     if (error.code === 'auth/popup-closed-by-user') {

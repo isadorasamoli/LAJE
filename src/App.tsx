@@ -4,11 +4,13 @@ import { doc, getDoc, setDoc, updateDoc, collection, getDocs, query, orderBy, wh
 import { db } from './lib/firebase';
 import { sendWelcomeEmail } from './lib/workspace';
 import { initAuth, googleSignIn, logout, getAccessToken } from './lib/auth';
-import { Terminal, LayoutDashboard, LogOut, Calendar as CalendarIcon, Moon, Sun, Settings } from 'lucide-react';
+import { Terminal, LayoutDashboard, LogOut, Calendar as CalendarIcon, Moon, Sun, Settings, History, Gamepad2 } from 'lucide-react';
 import Form from './components/Form';
 import Dashboard from './components/Dashboard';
 import CalendarTab from './components/CalendarTab';
 import AdminSettings from './components/AdminSettings';
+import AuditLogs from './components/AuditLogs';
+import ProjectsHub from './components/ProjectsHub';
 import { Toaster, toast } from 'react-hot-toast';
 
 export default function App() {
@@ -17,7 +19,7 @@ export default function App() {
   const [needsAuth, setNeedsAuth] = useState(true);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'form' | 'dashboard' | 'calendar' | 'settings'>('form');
+  const [activeTab, setActiveTab] = useState<'form' | 'projects' | 'dashboard' | 'calendar' | 'logs' | 'settings'>('form');
   const [isAdmin, setIsAdmin] = useState(false);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
@@ -66,7 +68,13 @@ export default function App() {
 
         const userData = userSnap.exists() ? userSnap.data() : {};
         if (userData.hasReceivedWelcomeEmail !== true) {
-          await sendWelcomeEmail(currentToken, currentUser.email || '', currentUser.displayName || 'Membro', futureEvents);
+          if (currentToken) {
+            try {
+              await sendWelcomeEmail(currentToken, currentUser.email || '', currentUser.displayName || 'Membro', futureEvents);
+            } catch (e) {
+              console.info("Boas-vindas por e-mail direto suprimido:", e);
+            }
+          }
           await setDoc(userRef, {
             ...userData,
             hasReceivedWelcomeEmail: true,
@@ -84,7 +92,7 @@ export default function App() {
         setUser(u);
         setToken(t);
         setNeedsAuth(false);
-        if (u && t) {
+        if (u) {
           checkUserRoleAndTheme(u);
           checkAndSendEmails(u, t);
         }
@@ -147,8 +155,12 @@ export default function App() {
         <Toaster position="top-right" />
         <div className="w-full max-w-md p-8 border border-[var(--color-ink-faint)] bg-[rgba(255,255,255,0.02)] transition-colors">
           <div className="flex flex-col items-center text-center space-y-6">
-            <div className="w-16 h-16 bg-[var(--color-accent)] text-[var(--color-bg-dark)] flex items-center justify-center rounded-sm">
-              <Terminal size={32} strokeWidth={2.5} />
+            <div className="w-20 h-20 flex items-center justify-center">
+              <img
+                src="./laje.png"
+                alt="Logo LAJE"
+                className="w-full h-full object-contain"
+              />
             </div>
             <div>
               <h1 className="font-['Syne'] text-[1.8rem] uppercase font-bold tracking-[-0.04em] mb-2 text-[var(--color-ink)]">Laje RH</h1>
@@ -187,8 +199,12 @@ export default function App() {
       <Toaster position="top-right" />
       <header className="col-span-full px-8 py-4 border-b border-[var(--color-ink-faint)] flex justify-between items-center bg-[rgba(12,12,14,0.8)] backdrop-blur-md z-[100]">
         <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-[var(--color-accent)] flex items-center justify-center rounded text-[var(--color-bg-dark)]">
-            <Terminal size={18} strokeWidth={2.5} />
+          <div className="w-9 h-9 flex items-center justify-center">
+            <img
+              src="./laje.png"
+              alt="Logo LAJE"
+              className="w-full h-full object-contain"
+            />
           </div>
           <h1 className="text-[1.2rem] font-['Syne'] font-bold tracking-[-0.04em] text-[var(--color-ink)] uppercase">Laje RH</h1>
         </div>
@@ -220,6 +236,17 @@ export default function App() {
           Formulário RH
         </button>
         <button
+          onClick={() => setActiveTab('projects')}
+          className={`flex items-center gap-3 px-4 py-3 rounded-md font-medium text-[0.9rem] transition-all w-full text-left border-none cursor-pointer ${
+            activeTab === 'projects' 
+              ? 'bg-[var(--color-ink-faint)] text-[var(--color-ink)]' 
+              : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[rgba(255,255,255,0.03)]'
+          }`}
+        >
+          <Gamepad2 size={18} />
+          Projetos & Vagas
+        </button>
+        <button
           onClick={() => setActiveTab('calendar')}
           className={`flex items-center gap-3 px-4 py-3 rounded-md font-medium text-[0.9rem] transition-all w-full text-left border-none cursor-pointer ${
             activeTab === 'calendar' 
@@ -244,6 +271,17 @@ export default function App() {
             >
               <LayoutDashboard size={18} />
               Dashboard
+            </button>
+            <button
+              onClick={() => setActiveTab('logs')}
+              className={`flex items-center gap-3 px-4 py-3 rounded-md font-medium text-[0.9rem] transition-all w-full text-left border-none cursor-pointer ${
+                activeTab === 'logs' 
+                  ? 'bg-[var(--color-ink-faint)] text-[var(--color-ink)]' 
+                  : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] hover:bg-[rgba(255,255,255,0.03)]'
+              }`}
+            >
+              <History size={18} />
+              Log de Alterações
             </button>
             <button
               onClick={() => setActiveTab('settings')}
@@ -274,6 +312,16 @@ export default function App() {
             Formulário
           </button>
           <button
+            onClick={() => setActiveTab('projects')}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg whitespace-nowrap transition-all ${
+              activeTab === 'projects' 
+                ? 'bg-[var(--color-ink-faint)] text-[var(--color-ink)]' 
+                : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] bg-[rgba(255,255,255,0.03)]'
+            }`}
+          >
+            Projetos
+          </button>
+          <button
             onClick={() => setActiveTab('calendar')}
             className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg whitespace-nowrap transition-all ${
               activeTab === 'calendar' 
@@ -296,6 +344,16 @@ export default function App() {
                 Dashboard
               </button>
               <button
+                onClick={() => setActiveTab('logs')}
+                className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg whitespace-nowrap transition-all ${
+                  activeTab === 'logs' 
+                    ? 'bg-[var(--color-ink-faint)] text-[var(--color-ink)]' 
+                    : 'text-[var(--color-ink-muted)] hover:text-[var(--color-ink)] bg-[rgba(255,255,255,0.03)]'
+                }`}
+              >
+                Logs
+              </button>
+              <button
                 onClick={() => setActiveTab('settings')}
                 className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg whitespace-nowrap transition-all ${
                   activeTab === 'settings' 
@@ -311,8 +369,17 @@ export default function App() {
 
         <div className="w-full">
           {activeTab === 'form' && <Form user={user} token={token || ''} />}
-          {activeTab === 'dashboard' && isAdmin && <Dashboard />}
+          {activeTab === 'projects' && (
+            <ProjectsHub 
+              isAdmin={isAdmin} 
+              currentUserEmail={user?.email || ''} 
+              currentUserName={user?.displayName || user?.email?.split('@')[0] || 'Membro'} 
+              token={token || ''}
+            />
+          )}
+          {activeTab === 'dashboard' && isAdmin && <Dashboard onNavigateTab={setActiveTab} />}
           {activeTab === 'calendar' && <CalendarTab isAdmin={isAdmin} token={token || ''} />}
+          {activeTab === 'logs' && isAdmin && <AuditLogs />}
           {activeTab === 'settings' && isAdmin && <AdminSettings />}
         </div>
       </main>
