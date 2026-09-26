@@ -69,23 +69,19 @@ export default function ProjectsHub({
   const [activeSubTab, setActiveSubTab] = useState<'projetos' | 'vagas' | 'mural' | 'proposta'>('projetos');
   const [loading, setLoading] = useState(true);
 
-  // Data states
   const [projects, setProjects] = useState<ProjectItem[]>([]);
   const [openings, setOpenings] = useState<OpeningItem[]>([]);
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [proposals, setProposals] = useState<ProposalItem[]>([]);
 
-  // Selected item modal states
   const [selectedProject, setSelectedProject] = useState<ProjectItem | null>(null);
   const [selectedTask, setSelectedTask] = useState<TaskItem | null>(null);
   const [selectedProposal, setSelectedProposal] = useState<ProposalItem | null>(null);
 
-  // Creation modal states
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
   const [isNewOpeningModalOpen, setIsNewOpeningModalOpen] = useState(false);
   const [isNewTaskModalOpen, setIsNewTaskModalOpen] = useState(false);
 
-  // Creation forms states
   const [newProjectForm, setNewProjectForm] = useState({
     name: '',
     status: 'em produção' as ProjectItem['status'],
@@ -127,13 +123,11 @@ export default function ProjectsHub({
   });
   const [isSubmittingTask, setIsSubmittingTask] = useState(false);
 
-  // Filters
   const [projectSearch, setProjectSearch] = useState('');
   const [taskAreaFilter, setTaskAreaFilter] = useState('all');
   const [taskOnlyBeginners, setTaskOnlyBeginners] = useState(false);
   const [openingProjectFilter, setOpeningProjectFilter] = useState('all');
 
-  // Proposal form state
   const [proposalForm, setProposalForm] = useState({
     proposerName: currentUserName || '',
     proposerDiscord: '',
@@ -149,19 +143,16 @@ export default function ProjectsHub({
   });
   const [isSubmittingProposal, setIsSubmittingProposal] = useState(false);
 
-  // Evaluation form for admin
   const [evaluationFeedback, setEvaluationFeedback] = useState('');
   const [evaluationDecision, setEvaluationDecision] = useState<ProposalItem['status']>('aprovado');
   const [isEvaluating, setIsEvaluating] = useState(false);
 
-  // Check-in modal state
   const [checkInModalProject, setCheckInModalProject] = useState<ProjectItem | null>(null);
   const [checkInNotes, setCheckInNotes] = useState('');
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      // Automatically wipe initial seeded projects/openings per user request: "tire todos os projetos & vagas, quero que eu mesma adicione"
       const hasCleanedSeed = localStorage.getItem('laje_cleared_initial_projects_v5');
       if (!hasCleanedSeed) {
         await clearAllProjectsAndOpenings();
@@ -249,7 +240,6 @@ export default function ProjectsHub({
       });
       toast.success(`Projeto "${newProjData.name}" cadastrado com sucesso!`);
 
-      // Automatic notification to members
       if (newProjectForm.notifyMembers) {
         try {
           const responseSnap = await getDocs(collection(db, 'responses'));
@@ -258,7 +248,6 @@ export default function ProjectsHub({
             .filter((email): email is string => Boolean(email && email.includes('@')));
 
           if (memberEmails.length > 0) {
-            // Register announcement in Firestore so all members see it in the hub
             try {
               await addDoc(collection(db, 'announcements'), {
                 title: `Novo Projeto: ${newProjData.name} ${newProjData.coverEmoji || '🎮'}`,
@@ -499,7 +488,6 @@ export default function ProjectsHub({
     }
   };
 
-  // Filtered views
   const filteredProjects = useMemo(() => {
     return projects.filter(p => 
       !projectSearch.trim() ||
@@ -526,7 +514,6 @@ export default function ProjectsHub({
     });
   }, [openings, openingProjectFilter]);
 
-  // Handler: Claim a microtask (without bureaucracy!)
   const handleClaimTask = async (task: TaskItem) => {
     if (!task.id) return;
     const authorEmail = currentUserEmail || auth.currentUser?.email || 'membro@laje.cin';
@@ -560,7 +547,6 @@ export default function ProjectsHub({
     }
   };
 
-  // Handler: Deliver task
   const handleDeliverTask = async (task: TaskItem) => {
     if (!task.id) return;
     try {
@@ -580,7 +566,6 @@ export default function ProjectsHub({
     }
   };
 
-  // Handler: Submit proposal
   const handleSubmitProposal = async (e: FormEvent) => {
     e.preventDefault();
     if (!proposalForm.projectTitle.trim() || !proposalForm.oneSentencePitch.trim()) {
@@ -632,7 +617,6 @@ export default function ProjectsHub({
     }
   };
 
-  // Handler: Board Evaluation for Proposal
   const handleEvaluateProposal = async () => {
     if (!selectedProposal?.id) return;
     try {
@@ -656,7 +640,6 @@ export default function ProjectsHub({
     }
   };
 
-  // Handler: Save Check-in
   const handleSaveCheckIn = async () => {
     if (!checkInModalProject?.id) return;
     try {
@@ -696,8 +679,7 @@ export default function ProjectsHub({
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-8 pb-16 animate-in fade-in duration-300 text-left">
-      {/* Header with Philosophy */}
+    <div id="projects-hub" className="w-full max-w-5xl mx-auto space-y-8 pb-16 animate-in fade-in duration-300 text-left">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--color-ink-faint)] pb-6">
         <div>
           <div className="flex items-center gap-3">
@@ -717,7 +699,6 @@ export default function ProjectsHub({
           </div>
         </div>
 
-        {/* Sub-tab Pills */}
         <div className="flex flex-wrap items-center gap-1.5 p-1 bg-black/40 border border-[var(--color-ink-faint)]">
           <button
             onClick={() => setActiveSubTab('projetos')}
@@ -766,10 +747,8 @@ export default function ProjectsHub({
         </div>
       </div>
 
-      {/* SUB-TAB 1: PROJETOS DE JOGOS */}
       {activeSubTab === 'projetos' && (
         <div className="space-y-6">
-          {/* Top search & stats */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 p-4 bg-[rgba(255,255,255,0.02)] border border-[var(--color-ink-faint)]">
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
@@ -805,7 +784,6 @@ export default function ProjectsHub({
             </div>
           </div>
 
-          {/* Projects Gallery */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredProjects.length === 0 ? (
               <div className="col-span-full py-16 px-6 text-center border border-dashed border-[var(--color-ink-faint)] bg-black/20 text-gray-400 space-y-4">
@@ -838,11 +816,9 @@ export default function ProjectsHub({
                   onClick={() => setSelectedProject(proj)}
                   className="p-5 bg-[rgba(255,255,255,0.02)] hover:bg-[rgba(255,255,255,0.04)] border border-[var(--color-ink-faint)] hover:border-gray-600 transition-all flex flex-col justify-between group cursor-pointer relative overflow-hidden"
                 >
-                  {/* Subtle Glow */}
                   <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-2xl pointer-events-none" />
 
                   <div>
-                    {/* Top Row: Emoji & Status */}
                     <div className="flex items-start justify-between gap-3 mb-3">
                       <div className="w-12 h-12 rounded-lg bg-gray-800/80 border border-gray-700 flex items-center justify-center text-2xl shadow-inner shrink-0 group-hover:scale-105 transition-transform">
                         {proj.coverEmoji || '🎮'}
@@ -867,7 +843,6 @@ export default function ProjectsHub({
                   </div>
 
                   <div>
-                    {/* Opportunities Badges */}
                     <div className="flex items-center gap-2 mb-4 pt-3 border-t border-gray-800 text-[11px] font-['Space_Mono']">
                       {projectOpenings.length > 0 && (
                         <span className="px-2 py-0.5 bg-amber-500/10 text-amber-300 border border-amber-500/30">
@@ -884,7 +859,6 @@ export default function ProjectsHub({
                       )}
                     </div>
 
-                    {/* Bottom Row: Leader & Action */}
                     <div className="flex items-center justify-between text-xs text-gray-400">
                       <span className="truncate max-w-[150px]">Líder: <strong className="text-gray-200">{proj.leader}</strong></span>
                       <span className="text-emerald-400 group-hover:translate-x-0.5 transition-transform flex items-center gap-1 font-['Space_Mono'] font-bold text-[11px]">

@@ -1,15 +1,26 @@
-# Sobre o Projeto
+# LAJE RH
 
-Este repositório contém o código-fonte do site da LAJE (Liga Acadêmica de Jogos Eletrônicos). O objetivo principal deste projeto web é auxiliar a liga, servindo como uma plataforma centralizada para divulgação de informações, organização de eventos, campeonatos e integração dos membros interessados em e-sports no ambiente acadêmico.
+Portal interno da Liga Acadêmica de Jogos Eletrônicos. O sistema reúne o cadastro dos membros, o acompanhamento do RH, o calendário e a organização dos projetos da liga.
 
-# Funcionalidades
-Apresentação da Liga (Quem somos, missão e visão).
-Mural de notícias e comunicados importantes.
-Calendário de campeonatos e eventos acadêmicos.
-Área de cadastro para novos membros ou times.
-Tabela de classificação/resultados dos torneios ativos.
+## O que existe aqui
 
-# Autora
+- Formulário de cadastro e atualização de dados dos membros;
+- Dashboard administrativo com filtros, aniversários e exportação de relatórios;
+- Catálogo de projetos, vagas e tarefas pontuais;
+- Calendário de eventos;
+- Registro de alterações para a diretoria;
+- Controle de administradores com Firebase Authentication e Firestore.
 
-Isadora Lima - GitHub
+## Desenvolvimento
+
+```bash
+npm install
+npm run dev
+```
+
+O build de produção pode ser conferido com `npm run build`. As configurações do Firebase ficam nas variáveis usadas por `src/lib/firebase.ts`.
+
+## Autoria
+
+Isadora Lima
 

@@ -221,7 +221,6 @@ export const sendNewProjectNotification = async (
   `;
 
   let sent = 0;
-  // Send in batches of up to 40 recipients per email via Bcc
   const BATCH_SIZE = 40;
   for (let i = 0; i < uniqueEmails.length; i += BATCH_SIZE) {
     const batch = uniqueEmails.slice(i, i + BATCH_SIZE);

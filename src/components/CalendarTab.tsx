@@ -34,7 +34,6 @@ export default function CalendarTab({ isAdmin, token }: CalendarProps) {
   const [memberBirthdays, setMemberBirthdays] = useState<MemberBirthday[]>([]);
   const [loading, setLoading] = useState(true);
   
-  // Birthday modal state
   const [selectedBirthday, setSelectedBirthday] = useState<{
     name: string;
     email: string;
@@ -44,13 +43,11 @@ export default function CalendarTab({ isAdmin, token }: CalendarProps) {
     date: Date;
   } | null>(null);
 
-  // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   
-  // Delete confirm state
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [eventToDelete, setEventToDelete] = useState<string | null>(null);
 
@@ -68,14 +65,11 @@ export default function CalendarTab({ isAdmin, token }: CalendarProps) {
   const fetchEvents = async () => {
     try {
       setLoading(true);
-      // 1. Fetch regular calendar events
       const q = query(collection(db, 'events'), orderBy('date', 'asc'));
       const querySnapshot = await getDocs(q);
       const docs = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setEvents(docs);
 
-      // 2. Fetch active members with birthday
-      // Ex-members or deleted members will not have birthdays displayed
       const responseSnap = await getDocs(collection(db, 'responses'));
       const bdays: MemberBirthday[] = [];
       responseSnap.docs.forEach(docSnap => {

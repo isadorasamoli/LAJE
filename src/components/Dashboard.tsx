@@ -25,7 +25,6 @@ export default function Dashboard({ onNavigateTab }: DashboardProps = {}) {
   const [isAlertPopoverOpen, setIsAlertPopoverOpen] = useState(false);
   const hasNotifiedBirthdaysRef = useRef(false);
   
-  // Status edit modal state
   const [isEditStatusOpen, setIsEditStatusOpen] = useState(false);
   const [deletionReason, setDeletionReason] = useState('');
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
@@ -50,16 +49,6 @@ export default function Dashboard({ onNavigateTab }: DashboardProps = {}) {
     fetchData();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-64 text-emerald-500">
-        <Loader2 className="animate-spin mb-4" size={32} />
-        <p className="text-sm font-medium text-gray-400">Carregando métricas...</p>
-      </div>
-    );
-  }
-
-  // Extract distinct roles and project names for filters
   const distinctRoles: string[] = Array.from(
     new Set<string>(
       data.flatMap(m => 
@@ -80,7 +69,6 @@ export default function Dashboard({ onNavigateTab }: DashboardProps = {}) {
     )
   ).sort();
 
-  // Helper counts for filter dropdown options
   const countByRole = (role: string) => {
     return data.filter(m => {
       if (!m.leagueRole) return false;
@@ -123,9 +111,7 @@ export default function Dashboard({ onNavigateTab }: DashboardProps = {}) {
     setStatusFilter('all');
   };
 
-  // Filter data based on search and filters
   const filteredData = data.filter(member => {
-    // 1. Search Query (Name, Email, Course, or Project)
     if (searchQuery.trim()) {
       const query = searchQuery.toLowerCase().trim();
       const matchName = member.name?.toLowerCase().includes(query);
@@ -137,7 +123,6 @@ export default function Dashboard({ onNavigateTab }: DashboardProps = {}) {
       }
     }
 
-    // 2. Role filter
     if (roleFilter !== 'all') {
       if (!member.leagueRole) return false;
       const memberRoles = String(member.leagueRole).toLowerCase().split(',').map((r: string) => r.trim());
@@ -146,7 +131,6 @@ export default function Dashboard({ onNavigateTab }: DashboardProps = {}) {
       if (!matchesRole) return false;
     }
 
-    // 3. Project Status filter
     if (projectStatusFilter !== 'all') {
       const hasProject = 
         member.isInProject === 'Sim' || 
@@ -178,7 +162,6 @@ export default function Dashboard({ onNavigateTab }: DashboardProps = {}) {
       }
     }
 
-    // 4. Member Status filter (Active / Former / All)
     if (statusFilter === 'active') {
       if (member.status === 'Ex-membro') return false;
     } else if (statusFilter === 'former') {
@@ -188,12 +171,10 @@ export default function Dashboard({ onNavigateTab }: DashboardProps = {}) {
     return true;
   });
 
-  // Active members only for calculations
   const activeMembers = filteredData.filter(m => m.status !== 'Ex-membro');
   const activeCount = activeMembers.length;
   const totalCount = filteredData.length;
   
-  // Active Projects Calculation (rough estimate based on splitting strings)
   const allProjects = new Set();
   activeMembers.forEach(m => {
     if (m.currentProjects) {
@@ -202,7 +183,6 @@ export default function Dashboard({ onNavigateTab }: DashboardProps = {}) {
   });
   const totalActiveProjects = allProjects.size;
 
-  // PDF Section 9.1: Inversão do Convite & Gestão de Projetos
   const membersInProjects = activeMembers.filter(m => 
     (m.isInProject === 'Sim') || 
     (m.currentProjects && m.currentProjects.trim().length > 0 && m.currentProjects.toLowerCase() !== 'nenhum')
@@ -218,7 +198,6 @@ export default function Dashboard({ onNavigateTab }: DashboardProps = {}) {
   const avgLeagueFocus = activeCount ? (activeMembers.reduce((acc, curr) => acc + (curr.leagueFocus || 0), 0) / activeCount).toFixed(1) : '0';
   const avgProgress = activeCount ? Math.round(activeMembers.reduce((acc, curr) => acc + (curr.progress || 0), 0) / activeCount) : 0;
 
-  // Roles distribution for chart (active only)
   const rolesCount = activeMembers.reduce((acc: any, curr) => {
     const roles = curr.leagueRole
       ? String(curr.leagueRole).split(',').map((r: string) => r.trim()).filter(Boolean)
@@ -234,7 +213,6 @@ export default function Dashboard({ onNavigateTab }: DashboardProps = {}) {
     Membros: rolesCount[role]
   }));
 
-  // Birthday parsing and month matching helper
   const parseBirthday = (birthdayStr?: string) => {
     if (!birthdayStr || typeof birthdayStr !== 'string') return null;
     const str = birthdayStr.trim();
@@ -419,6 +397,15 @@ export default function Dashboard({ onNavigateTab }: DashboardProps = {}) {
       triggerBirthdayToast(activeTodayBirthdays);
     }
   }, [loading, activeTodayBirthdays.length]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 text-emerald-500">
+        <Loader2 className="animate-spin mb-4" size={32} />
+        <p className="text-sm font-medium text-gray-400">Carregando métricas...</p>
+      </div>
+    );
+  }
 
   const handleCopyCongrats = (member: any) => {
     const text = `Parabéns pelo seu aniversário, ${member.name}! 🎂 Toda a equipe da LAJE deseja um novo ciclo com muito sucesso, saúde e realizações!`;

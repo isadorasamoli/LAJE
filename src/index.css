@@ -27,6 +27,11 @@
   }
 }
 
-div#root:nth-of-type(1) > div:nth-of-type(1) > main:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) > div:nth-of-type(1) {
+.app-main {
   background-color: #141414;
+}
+
+#projects-hub [class*="font-['Syne']"],
+#projects-hub [class*="font-['Space_Mono']"] {
+  font-family: var(--font-sans);
 }

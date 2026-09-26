@@ -91,14 +91,11 @@ export interface ProposalItem {
   createdAt: number;
 }
 
-// Initial mock seed data cleared per user request: "tire todos os projetos & vagas, quero que eu mesma adicione"
 export const INITIAL_PROJECTS: Omit<ProjectItem, 'id'>[] = [];
 export const INITIAL_OPENINGS: Omit<OpeningItem, 'id'>[] = [];
 export const INITIAL_TASKS: Omit<TaskItem, 'id'>[] = [];
 
-// Auto-seeding disabled per user request: "tire todos os projetos & vagas, quero que eu mesma adicione"
 export async function ensureProjectsSeeded() {
-  // No-op: user creates and manages all projects & openings manually through the UI
   return;
 }
 

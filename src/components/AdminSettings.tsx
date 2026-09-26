@@ -62,14 +62,12 @@ export default function AdminSettings() {
       setNewEmail('');
       fetchAdmins();
     } catch (err) {
-      console.error("ERRO AO DELETAR:", err); toast.error("Erro: " + (err.message || "desconhecido"));
+      console.error('Erro ao adicionar administrador:', err);
       toast.error('Erro ao adicionar administrador');
     }
   };
 
   const handleRemoveAdmin = async (id: string, email: string) => {
-    // Removed window.confirm because it's blocked in iframes
-
     try {
       await deleteDoc(doc(db, 'admins', id));
       toast.success('Administrador removido com sucesso!');

@@ -23,7 +23,6 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
-  // Handle dark mode class on HTML
   useEffect(() => {
     if (theme === 'dark') {
       document.documentElement.classList.add('dark');
@@ -35,7 +34,6 @@ export default function App() {
   useEffect(() => {
     const checkUserRoleAndTheme = async (currentUser: User) => {
       try {
-        // Admin access is granted only to the two owners or an exact admins document.
         let adminStatus = false;
         const userEmail = currentUser.email?.toLowerCase().trim() || '';
         if (userEmail === 'isadorasdml@gmail.com' || userEmail === 'isadora.mlima@ufpe.br') {
@@ -46,7 +44,6 @@ export default function App() {
         }
         setIsAdmin(adminStatus);
 
-        // Fetch theme pref
         const userRef = doc(db, 'users', currentUser.uid);
         const userSnap = await getDoc(userRef);
         if (userSnap.exists() && userSnap.data().theme) {
@@ -298,8 +295,8 @@ export default function App() {
         )}
       </aside>
 
-      <main className="p-8 overflow-y-auto bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.05),transparent_40%)]">
-        {/* Mobile Navigation (since aside is hidden on small screens) */}
+      <main className="app-main p-8 overflow-y-auto bg-[radial-gradient(circle_at_top_right,rgba(16,185,129,0.05),transparent_40%)]">
+        {/* Navegação compacta para telas menores */}
         <nav className="flex md:hidden flex-wrap gap-2 mb-8 pb-2">
           <button
             onClick={() => setActiveTab('form')}

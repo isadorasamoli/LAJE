@@ -54,13 +54,11 @@ export default function AuditLogs() {
     fetchLogs();
   }, []);
 
-  // Filter logs
   const filteredLogs = useMemo(() => {
     const now = Date.now();
     const oneDay = 24 * 60 * 60 * 1000;
 
     return logs.filter(log => {
-      // Search
       const matchesSearch = 
         !searchQuery.trim() ||
         log.targetMemberName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -72,7 +70,6 @@ export default function AuditLogs() {
 
       if (!matchesSearch) return false;
 
-      // Action Filter
       if (selectedAction !== 'all') {
         if (selectedAction === 'STATUS' && log.action !== 'Alteração de Status') return false;
         if (selectedAction === 'DATA' && log.action !== 'Atualização de Dados') return false;
@@ -80,7 +77,6 @@ export default function AuditLogs() {
         if (selectedAction === 'DELETE' && log.action !== 'Exclusão de Membro') return false;
       }
 
-      // Period Filter
       if (selectedPeriod === 'today') {
         const isToday = now - log.timestamp < oneDay;
         if (!isToday) return false;
@@ -96,7 +92,6 @@ export default function AuditLogs() {
     });
   }, [logs, searchQuery, selectedAction, selectedPeriod]);
 
-  // Metrics
   const statusChangesCount = useMemo(() => logs.filter(l => l.action === 'Alteração de Status').length, [logs]);
   const dataUpdatesCount = useMemo(() => logs.filter(l => l.action === 'Atualização de Dados').length, [logs]);
   const decisionsCount = useMemo(() => logs.filter(l => ['Autorização de Edição', 'Recusa de Edição'].includes(l.action)).length, [logs]);
@@ -176,7 +171,6 @@ export default function AuditLogs() {
 
   return (
     <div className="w-full max-w-5xl mx-auto space-y-8 pb-12 animate-in fade-in duration-300">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[var(--color-ink-faint)] pb-6">
         <div>
           <div className="flex items-center gap-3">
@@ -215,7 +209,6 @@ export default function AuditLogs() {
         </div>
       </div>
 
-      {/* Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="p-5 bg-[rgba(255,255,255,0.02)] border border-[var(--color-ink-faint)] flex items-center justify-between">
           <div>
@@ -258,9 +251,7 @@ export default function AuditLogs() {
         </div>
       </div>
 
-      {/* Filters and Search Bar */}
       <div className="p-4 bg-[rgba(255,255,255,0.02)] border border-[var(--color-ink-faint)] flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
-        {/* Search */}
         <div className="relative flex-1">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500" size={16} />
           <input
@@ -272,7 +263,6 @@ export default function AuditLogs() {
           />
         </div>
 
-        {/* Filters */}
         <div className="flex flex-wrap sm:flex-nowrap items-center gap-3">
           <div className="flex items-center gap-2 flex-1 sm:flex-none">
             <Filter size={14} className="text-gray-500 shrink-0" />
@@ -304,7 +294,6 @@ export default function AuditLogs() {
         </div>
       </div>
 
-      {/* Audit Log Table */}
       <div className="p-6 bg-[rgba(255,255,255,0.02)] border border-[var(--color-ink-faint)] overflow-hidden">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-white font-semibold text-sm font-['Syne']">
@@ -396,7 +385,6 @@ export default function AuditLogs() {
         )}
       </div>
 
-      {/* Detail Modal */}
       {selectedLog && (
         <div 
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm animate-in fade-in duration-200"
@@ -406,7 +394,6 @@ export default function AuditLogs() {
             className="bg-[#141416] border border-gray-700 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl p-6 relative text-left"
             onClick={e => e.stopPropagation()}
           >
-            {/* Modal Header */}
             <div className="flex items-start justify-between pb-4 border-b border-gray-800 mb-6">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 bg-gray-800 text-emerald-400 border border-gray-700">
@@ -430,9 +417,7 @@ export default function AuditLogs() {
               </button>
             </div>
 
-            {/* Modal Content */}
             <div className="space-y-6">
-              {/* Meta Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="p-4 bg-gray-900/80 border border-gray-800 space-y-1">
                   <span className="text-[10px] font-bold text-gray-500 uppercase font-['Space_Mono']">
@@ -451,7 +436,6 @@ export default function AuditLogs() {
                 </div>
               </div>
 
-              {/* Details Block */}
               <div className="p-4 bg-gray-900/80 border border-gray-800 space-y-2">
                 <span className="text-[10px] font-bold text-gray-500 uppercase font-['Space_Mono']">
                   Descrição Completa da Ação
@@ -461,7 +445,6 @@ export default function AuditLogs() {
                 </p>
               </div>
 
-              {/* Diff Values if available */}
               {(selectedLog.previousValue || selectedLog.newValue) && (
                 <div className="space-y-3">
                   <span className="text-[10px] font-bold text-gray-500 uppercase font-['Space_Mono'] block">
@@ -503,10 +486,9 @@ export default function AuditLogs() {
                 </div>
               )}
 
-              {/* Technical Footnote */}
               <div className="p-3 bg-black/40 border border-gray-800 flex items-center justify-between text-[10px] text-gray-500 font-['Space_Mono']">
                 <span>ID do Evento: {selectedLog.id || 'N/A'}</span>
-                <span>Registro Criptografado no Firestore</span>
+                <span>Registro salvo no Firestore</span>
               </div>
             </div>
 

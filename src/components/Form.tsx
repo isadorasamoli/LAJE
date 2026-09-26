@@ -284,8 +284,8 @@ export default function Form({ user, token }: FormProps) {
     return (
       <div className="w-full max-w-2xl mx-auto mt-12 p-8 border border-emerald-500/20 bg-emerald-500/10 text-center flex flex-col items-center">
         <CheckCircle size={64} className="text-emerald-500 mb-6" />
-        <h2 className="text-2xl font-bold text-white mb-2 tracking-tight">Transmissão Concluída</h2>
-        <p className="text-gray-400 font-medium">Seus dados foram sincronizados com o sistema do RH da LAJE.</p>
+        <h2 className="text-2xl font-bold text-white mb-2 tracking-tight">Dados salvos</h2>
+        <p className="text-gray-400 font-medium">Seu cadastro foi atualizado no RH da LAJE.</p>
         <button 
           type="button"
           onClick={() => {
@@ -296,7 +296,7 @@ export default function Form({ user, token }: FormProps) {
           }}
           className="mt-8 px-6 py-2.5 bg-[rgba(255,255,255,0.02)] border border-[var(--color-ink-faint)] text-[var(--color-ink)] font-semibold hover:bg-[rgba(255,255,255,0.1)] transition-colors text-sm cursor-pointer"
         >
-          Visualizar Resumo
+          Voltar ao cadastro
         </button>
       </div>
     );
