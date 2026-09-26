@@ -15,7 +15,6 @@ import {
   OpeningItem, 
   TaskItem, 
   ProposalItem, 
-  ensureProjectsSeeded,
   clearAllProjectsAndOpenings
 } from '../lib/projects';
 import { sendNewProjectNotification, createProjectMailtoLink } from '../lib/workspace';
@@ -153,14 +152,6 @@ export default function ProjectsHub({
   const fetchData = async () => {
     try {
       setLoading(true);
-      const hasCleanedSeed = localStorage.getItem('laje_cleared_initial_projects_v5');
-      if (!hasCleanedSeed) {
-        await clearAllProjectsAndOpenings();
-        localStorage.setItem('laje_cleared_initial_projects_v5', 'true');
-      }
-
-      await ensureProjectsSeeded();
-
       const [projSnap, openSnap, taskSnap, propSnap] = await Promise.all([
         getDocs(query(collection(db, 'projects'), orderBy('createdAt', 'desc'))),
         getDocs(query(collection(db, 'openings'), orderBy('openedAt', 'desc'))),

@@ -135,7 +135,7 @@ export default function App() {
     } catch (err: any) {
       console.error('Login failed:', err);
       const messages: Record<string, string> = {
-        'auth/unauthorized-domain': 'Este domínio ainda não foi autorizado no Firebase. Adicione isadorasamoli.github.io em Authentication > Settings > Authorized domains.',
+        'auth/unauthorized-domain': `Este domínio (${window.location.hostname}) ainda não foi autorizado no Firebase. Adicione-o em Authentication > Settings > Authorized domains.`,
         'auth/operation-not-allowed': 'O login com Google ainda não está habilitado no Firebase.',
         'auth/popup-blocked': 'O navegador bloqueou a janela de login. Permita pop-ups para este site e tente novamente.',
         'auth/popup-closed-by-user': 'A janela de login foi fechada antes da conclusão.',
